@@ -37,6 +37,7 @@
 
             <!-- 单项操作按钮 -->
             <WrapPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,4">
+                <Button Name="btnPreview" Content="预览" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnInfo" Content="Info" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnExport" Content="导出" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnImport" Content="导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
@@ -122,6 +123,37 @@
                     <TextBlock Name="progressText" Text="处理中..." FontSize="16" Foreground="White" HorizontalAlignment="Center"/>
                     <ProgressBar Name="progressBar" IsIndeterminate="True" MinWidth="200"/>
                 </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 预览弹出层 -->
+        <Border Name="previewOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Border Background="#222" CornerRadius="8" Padding="12"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MaxWidth="450" MaxHeight="650">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <TextBlock Grid.Row="0" Name="previewTitle" Text="预览" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,6"/>
+                    <TextBlock Grid.Row="1" Name="previewInfo" FontSize="11" Foreground="#aaa" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <ScrollViewer Grid.Row="2" MaxHeight="420" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Image Name="previewImage" IsVisible="False" Stretch="Uniform" MaxWidth="400" MaxHeight="400"/>
+                            <TextBox Name="previewTextBox" IsVisible="False"
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     FontFamily="monospace" FontSize="11"
+                                     MinWidth="300" MinHeight="200"
+                                     MaxWidth="400" MaxHeight="400"
+                                     Background="#111" Foreground="#ddd"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        </Grid>
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button Name="btnReplaceTexture" Content="替换贴图" Height="40" MinWidth="90" IsVisible="False"/>
+                        <Button Name="btnSaveText" Content="保存文本" Height="40" MinWidth="90" IsVisible="False"/>
+                        <Button Name="btnClosePreview" Content="关闭" Height="40" MinWidth="80"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Border>
     </Panel>

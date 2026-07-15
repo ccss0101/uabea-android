@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="UABEA.Android.CrashView"
+             Background="#1a0000">
+    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto">
+        <TextBlock Grid.Row="0" Text="UABEA 崩溃报告" FontSize="22" FontWeight="Bold" Foreground="#ff6b6b" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" Text="以下是崩溃日志，可长按选择复制：" Foreground="#ffa0a0" Margin="0,0,0,8" TextWrapping="Wrap"/>
+        <TextBox Grid.Row="2" Name="logBox" IsReadOnly="True" FontFamily="monospace" FontSize="11"
+                 Background="#000000" Foreground="#00ff00" TextWrapping="Wrap"
+                 AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 BorderBrush="#444" BorderThickness="1"/>
+        <Button Grid.Row="3" Name="btnRestart" Content="请手动重新打开 UABEA" Height="50" Margin="0,12,0,0" FontSize="16" IsEnabled="False"/>
+    </Grid>
+</UserControl>

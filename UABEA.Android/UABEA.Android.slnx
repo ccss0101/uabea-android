@@ -1,0 +1,11 @@
+﻿<Solution>
+  <Project Path="UABEA.Android.Android/UABEA.Android.Android.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="UABEA.Android.Browser/UABEA.Android.Browser.csproj" />
+  <Project Path="UABEA.Android.Desktop/UABEA.Android.Desktop.csproj" />
+  <Project Path="UABEA.Android.iOS/UABEA.Android.iOS.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="UABEA.Android/UABEA.Android.csproj" />
+</Solution>

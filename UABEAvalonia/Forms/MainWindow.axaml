@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Icon="/Assets/uabeavalonia16.ico"
+        x:Class="UABEAvalonia.MainWindow"
+        Title="UABEA"
+        DragDrop.AllowDrop="True"
+        WindowStartupLocation="CenterOwner">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- 顶部菜单 -->
+    <Menu Grid.Row="0" Height="40" VerticalAlignment="Top" Name="menuMain" FontSize="16">
+      <MenuItem Header="File">
+        <MenuItem Header="Open" HotKey="Ctrl+O" InputGesture="Ctrl+O" Name="menuOpen" />
+        <MenuItem Header="Load Package File" HotKey="Ctrl+P" InputGesture="Ctrl+P" Name="menuLoadPackageFile" />
+        <MenuItem Header="Close" HotKey="Ctrl+W" InputGesture="Ctrl+W" Name="menuClose" />
+        <MenuItem Header="Save" HotKey="Ctrl+S" InputGesture="Ctrl+S" Name="menuSave" />
+        <MenuItem Header="Save as..." HotKey="Ctrl+Shift+S" InputGesture="Ctrl+Shift+S" Name="menuSaveAs" />
+        <Separator />
+        <MenuItem Header="Compress" HotKey="Ctrl+M" InputGesture="Ctrl+M" Name="menuCompress" />
+        <MenuItem Header="Exit" HotKey="Ctrl+Q" InputGesture="Ctrl+Q" Name="menuExit" />
+      </MenuItem>
+      <MenuItem Header="Options">
+        <MenuItem Header="Toggle Dark Theme" Name="menuToggleDarkTheme" />
+        <MenuItem Header="Enable/Disable Cpp2Il" Name="menuToggleCpp2Il" />
+      </MenuItem>
+      <MenuItem Header="Help">
+        <MenuItem Header="About..." Name="menuAbout" />
+      </MenuItem>
+    </Menu>
+
+    <!-- 当前文件名 -->
+    <TextBlock Grid.Row="1" Margin="10,8" HorizontalAlignment="Stretch" Text="No file opened." TextAlignment="Center" FontWeight="Bold" FontSize="15" Name="lblFileName" TextWrapping="Wrap" />
+
+    <!-- 文件下拉框 -->
+    <ComboBox Grid.Row="2" Margin="10,4,10,8" Height="42" IsEnabled="False" Name="comboBox" FontSize="14">
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{Binding}" Foreground="{Binding Color}" />
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+
+    <!-- 操作按钮区：手机友好，大按钮，自适应宽度 -->
+    <ScrollViewer Grid.Row="3" Margin="8,4,8,8" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 第一行：Export / Export All / Info -->
+        <Grid Grid.Row="0" Margin="0,0,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Button Grid.Column="0" HorizontalAlignment="Stretch" IsEnabled="False" Name="btnExport" Height="52" FontSize="14" Margin="0,0,3,0">Export</Button>
+          <Button Grid.Column="1" HorizontalAlignment="Stretch" IsEnabled="False" Name="btnExportAll" Height="52" FontSize="14" Margin="3,0,3,0">Export All</Button>
+          <Button Grid.Column="2" HorizontalAlignment="Stretch" IsEnabled="False" Name="btnInfo" Height="52" FontSize="14" Margin="3,0,0,0">Info</Button>
+        </Grid>
+
+        <!-- 第二行：Import / Import All / Remove -->
+        <Grid Grid.Row="1" Margin="0,0,0,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Button Grid.Column="0" HorizontalAlignment="Stretch" IsEnabled="False" Name="btnImport" Height="52" FontSize="14" Margin="0,0,3,0">Import</Button>
+          <Button Grid.Column="1" HorizontalAlignment="Stretch" IsEnabled="False" Name="btnImportAll" Height="52" FontSize="14" Margin="3,0,3,0">Import All</Button>
+          <Button Grid.Column="2" HorizontalAlignment="Stretch" IsEnabled="False" Name="btnRemove" Height="52" FontSize="14" Margin="3,0,0,0">Remove</Button>
+        </Grid>
+
+        <!-- 第三行：Rename -->
+        <Grid Grid.Row="2">
+          <Button HorizontalAlignment="Stretch" IsEnabled="False" Name="btnRename" Height="52" FontSize="14">Rename</Button>
+        </Grid>
+      </Grid>
+    </ScrollViewer>
+  </Grid>
+</Window>

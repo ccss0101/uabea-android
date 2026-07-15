@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- UABEA NuGet 依赖 -->
+  <ItemGroup>
+    <PackageReference Include="AssetRipper.TextureDecoder" Version="1.2.0" />
+    <PackageReference Include="Avalonia" Version="11.0.1" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.0.1" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.0.1" />
+    <PackageReference Include="Avalonia.Themes.Simple" Version="11.0.1" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.0.1" />
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.0.1" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3-beta1" />
+    <PackageReference Include="Samboy063.LibCpp2IL" Version="2022.0.7.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" />
+  </ItemGroup>
+
+  <!-- AssetsTools.NET DLL 引用 -->
+  <ItemGroup>
+    <Reference Include="AssetsTools.NET">
+      <HintPath>..\..\Libs\AssetsTools.NET.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetsTools.NET.Cpp2IL">
+      <HintPath>..\..\Libs\AssetsTools.NET.Cpp2IL.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetsTools.NET.MonoCecil">
+      <HintPath>..\..\Libs\AssetsTools.NET.MonoCecil.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetsTools.NET.Texture">
+      <HintPath>..\..\Libs\AssetsTools.NET.Texture.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Link UABEAvalonia 源码 -->
+  <ItemGroup>
+    <Compile Include="..\..\UABEAvalonia\**\*.cs" Exclude="..\..\UABEAvalonia\obj\**;..\..\UABEAvalonia\bin\**;..\..\UABEAvalonia\Android\**;..\..\UABEAvalonia\Properties\**;..\..\UABEAvalonia\App.axaml.cs;..\..\UABEAvalonia\Program.cs;..\..\UABEAvalonia\Forms\MainWindow.axaml.cs" Link="UABEAvalonia\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaXaml Include="..\..\UABEAvalonia\**\*.axaml" Exclude="..\..\UABEAvalonia\obj\**;..\..\UABEAvalonia\bin\**;..\..\UABEAvalonia\App.axaml;..\..\UABEAvalonia\Forms\MainWindow.axaml" Link="UABEAvalonia\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <!-- UABEA Assets 资源 -->
+  <ItemGroup>
+    <AvaloniaResource Include="..\..\UABEAvalonia\Assets\**" Link="Assets\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Grammars -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\UABEAvalonia\Grammars\utxt\syntaxes\utxt.tmLanguage.json" Link="Grammars\utxt\syntaxes\utxt.tmLanguage.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="..\..\UABEAvalonia\Grammars\utxt\syntaxes\utxt.tmLanguage.json" Link="Grammars\utxt\syntaxes\utxt.tmLanguage.json" />
+  </ItemGroup>
+</Project>

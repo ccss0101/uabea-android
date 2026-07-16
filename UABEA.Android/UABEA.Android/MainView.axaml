@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:uabea="clr-namespace:UABEAvalonia;assembly=UABEA.Core"
+             xmlns:android="clr-namespace:UABEA.Android"
              x:Class="UABEA.Android.MainView">
     <!-- 设置弹出层用到的配置项 DataTemplate（按运行时类型自动选择） -->
     <UserControl.DataTemplates>
@@ -199,6 +200,18 @@
                         <Button Name="btnSettingsClose" Content="关闭" Height="40" MinWidth="90"/>
                     </StackPanel>
                 </Grid>
+            </Border>
+        </Border>
+
+        <!-- 内置文件选择器弹出层：避免系统文件选择器导致应用掉后台被回收。
+             直接通过 System.IO 遍历存储目录，全程在应用进程内完成。 -->
+        <Border Name="fileBrowserOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Border Background="{DynamicResource SystemRegionBrush}" CornerRadius="8" Padding="12"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    Margin="8">
+                <android:FileBrowserView Name="fileBrowser"/>
             </Border>
         </Border>
     </Panel>

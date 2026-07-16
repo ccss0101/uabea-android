@@ -169,41 +169,43 @@ namespace UABEA.Android
         }
 
         // ==================== 打开文件 ====================
-        private async void BtnOpen_Click(object? sender, RoutedEventArgs e)
+        // 使用内置文件选择器，避免系统文件选择器（独立 Activity）导致应用掉后台被回收
+        private void BtnOpen_Click(object? sender, RoutedEventArgs e)
         {
             try
             {
                 if (_changesUnsaved && _bundleInst != null)
                 {
-                    // 简单提示，不做对话框
                     Log("有未保存的修改，继续打开将丢弃");
                 }
 
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) { Log("无法获取 TopLevel"); return; }
+                // 显示内置文件浏览器 overlay
+                fileBrowser.Initialize(
+                    startDir: null,
+                    extensions: new HashSet<string> { "bundle", "assets", "dat", "unity3d", "ab", "" });
+                fileBrowser.FileSelected -= FileBrowser_FileSelected;
+                fileBrowser.Cancelled -= FileBrowser_Cancelled;
+                fileBrowser.FileSelected += FileBrowser_FileSelected;
+                fileBrowser.Cancelled += FileBrowser_Cancelled;
+                fileBrowserOverlay.IsVisible = true;
+            }
+            catch (Exception ex)
+            {
+                Log("打开文件选择器异常: " + ex);
+                statusText.Text = "打开失败: " + ex.Message;
+            }
+        }
 
-                var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
-                {
-                    Title = "选择 AssetBundle 或 .assets 文件",
-                    FileTypeFilter = new List<FilePickerFileType>
-                    {
-                        new FilePickerFileType("All files") { Patterns = new List<string> { "*" } }
-                    }
-                });
-
-                if (files == null || files.Count == 0) return;
-
-                var storageFile = files[0];
-                string? path = storageFile.TryGetLocalPath();
-
+        private async void FileBrowser_FileSelected(object? sender, string? path)
+        {
+            try
+            {
+                fileBrowserOverlay.IsVisible = false;
                 if (string.IsNullOrEmpty(path))
                 {
-                    Log("TryGetLocalPath 返回 null，使用流复制到缓存...");
-                    path = await CopyStorageFileToCache(storageFile);
+                    Log("未选择文件");
+                    return;
                 }
-
-                if (string.IsNullOrEmpty(path)) { Log("无法获取文件路径"); return; }
-
                 Log($"打开文件: {path}");
                 await OpenFile(path);
             }
@@ -212,6 +214,11 @@ namespace UABEA.Android
                 Log("打开文件异常: " + ex);
                 statusText.Text = "打开失败: " + ex.Message;
             }
+        }
+
+        private void FileBrowser_Cancelled(object? sender, EventArgs e)
+        {
+            fileBrowserOverlay.IsVisible = false;
         }
 
         /// <summary>把 IStorageFile 的内容复制到缓存目录，返回临时文件路径。解决 Android content:// URI 无法直接访问的问题。</summary>

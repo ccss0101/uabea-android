@@ -124,48 +124,48 @@ namespace UABEAvalonia
     {
         // ---- 主题 ----
         [ObservableProperty]
-        [property: ConfigTitle("Theme Type")]
-        [property: ConfigDesc("The theme to use. Auto follows the system theme.")]
+        [property: ConfigTitle("主题类型")]
+        [property: ConfigDesc("选择应用主题。自动模式跟随系统主题。")]
         private ConfigurationThemeType _themeType = ConfigurationThemeType.Auto;
 
         // ---- 反编译 ----
         [ObservableProperty]
-        [property: ConfigTitle("Use Managed over IL2CPP")]
-        [property: ConfigDesc("Use the Managed folder if it exists, rather than use CPP2IL.")]
+        [property: ConfigTitle("优先使用 Managed 而非 IL2CPP")]
+        [property: ConfigDesc("如果存在 Managed 文件夹则优先使用，而非使用 CPP2IL。")]
         private bool _useManagedOverIl2cpp = false;
 
         [ObservableProperty]
-        [property: ConfigTitle("Use Cpp2Il")]
-        [property: ConfigDesc("Legacy flag retained for backward compatibility. When true, CPP2IL is preferred for IL2CPP assemblies.")]
+        [property: ConfigTitle("使用 Cpp2Il")]
+        [property: ConfigDesc("为兼容性保留的选项。开启后，IL2CPP 程序集将优先使用 CPP2IL 反编译。")]
         private bool _useCpp2Il = true;
 
         // ---- 文件名长度 ----
         [ObservableProperty]
-        [property: ConfigTitle("Listing Filename Length Limit")]
-        [property: ConfigDesc("Maximum length for the asset name when generating asset list.")]
+        [property: ConfigTitle("列表文件名长度限制")]
+        [property: ConfigDesc("生成资产列表时资产名称的最大长度。")]
         [property: ConfigRange(0, int.MaxValue)]
         private int _listingNameLength = 300;
 
         [ObservableProperty]
-        [property: ConfigTitle("Export Filename Length Limit")]
-        [property: ConfigDesc("Maximum length for the asset name when exporting assets.")]
+        [property: ConfigTitle("导出文件名长度限制")]
+        [property: ConfigDesc("导出资产时资产名称的最大长度。")]
         [property: ConfigRange(0, int.MaxValue)]
         private int _exportNameLength = 150;
 
         // ---- 导入导出行为 ----
         [ObservableProperty]
-        [property: ConfigTitle("Export/Import Plain Filenames")]
-        [property: ConfigDesc("Export as a name only, instead of a name + source file + path ID.\nTwo assets with the same name will cause issues, use at your own risk!")]
+        [property: ConfigTitle("导入导出仅使用纯文件名")]
+        [property: ConfigDesc("仅以名称导出，而非 名称 + 源文件 + Path ID。\n两个同名资产会导致冲突，慎用！")]
         private bool _exportImportJustNames = false;
 
         [ObservableProperty]
-        [property: ConfigTitle("Load Container Paths")]
-        [property: ConfigDesc("Load container paths, which may take a while when loading many assets.")]
+        [property: ConfigTitle("加载容器路径")]
+        [property: ConfigDesc("加载容器路径，加载大量资产时可能较慢。")]
         private bool _loadContainerPaths = true;
 
         [ObservableProperty]
-        [property: ConfigTitle("Full Crop Sprites")]
-        [property: ConfigDesc("When unchecked, sprites are placed on a virtual canvas with padding. When checked, sprites are fully cropped.")]
+        [property: ConfigTitle("完全裁剪精灵图")]
+        [property: ConfigDesc("关闭时，精灵图置于带 padding 的虚拟画布上。开启时，精灵图被完全裁剪。")]
         private bool _fullCropSprites = true;
 
         /// <summary>

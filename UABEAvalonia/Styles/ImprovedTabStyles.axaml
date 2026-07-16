@@ -13,7 +13,7 @@
       </TabControl>
     </Border>
   </Design.PreviewWith>
-  
+
   <Styles.Resources>
     <ResourceDictionary>
       <ResourceDictionary.ThemeDictionaries>
@@ -29,10 +29,12 @@
     </ResourceDictionary>
   </Styles.Resources>
 
+  <!-- P3-A：TabItem 颜色改为 DynamicResource 引用 Application.Resources 中的
+       TabItem*Brush（在 SimpleLight/SimpleDark.axaml 中按主题切换）。 -->
   <Style Selector="TabControl">
     <Setter Property="Background" Value="{DynamicResource TabViewBackgroundBrush}"/>
   </Style>
-  
+
   <Style Selector="TabControl WrapPanel">
     <Setter Property="Background" Value="{DynamicResource ThemeBackgroundBrush}" />
     <Setter Property="Margin" Value="0 -4 0 0" />
@@ -41,35 +43,35 @@
   <Style Selector="TabItem">
     <Setter Property="FontSize" Value="12"/>
     <Setter Property="Height" Value="30"/>
-    <Setter Property="Background" Value="#119EDA"/>
-    <Setter Property="Foreground" Value="#F0F0F0"/>
+    <Setter Property="Background" Value="{DynamicResource TabItemHeaderSelectedBackgroundBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TabItemHeaderForegroundBrush}"/>
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="Margin" Value="0 0 0 0"/>
     <Setter Property="Padding" Value="10 0"/>
-    <Setter Property="BorderBrush" Value="#119EDA"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource TabItemHeaderSelectedBackgroundBrush}"/>
   </Style>
-  
+
   <Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#33AEEA"/>
+    <Setter Property="Background" Value="{DynamicResource TabItemHeaderHoverBackgroundBrush}"/>
   </Style>
 
   <Style Selector="TabItem:focus">
-    <Setter Property="Foreground" Value="#33AEEA"/>
+    <Setter Property="Foreground" Value="{DynamicResource TabItemHeaderSelectedForegroundBrush}"/>
     <Setter Property="Margin" Value="0 0 0 0"/>
     <Setter Property="Padding" Value="10 0"/>
   </Style>
-  
+
   <Style Selector="TabItem:focus /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#F0F0F0"/>
+    <Setter Property="Background" Value="{DynamicResource TabItemContentBackgroundBrush}"/>
   </Style>
 
   <Style Selector="TabItem:selected">
-    <Setter Property="Foreground" Value="#33AEEA"/>
+    <Setter Property="Foreground" Value="{DynamicResource TabItemHeaderSelectedForegroundBrush}"/>
     <Setter Property="Margin" Value="0 0 0 0"/>
     <Setter Property="Padding" Value="10 0"/>
   </Style>
-  
+
   <Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#F0F0F0"/>
+    <Setter Property="Background" Value="{DynamicResource TabItemContentBackgroundBrush}"/>
   </Style>
 </Styles>

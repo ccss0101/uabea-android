@@ -6,9 +6,11 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <ApplicationIcon>uabeavalonia.ico</ApplicationIcon>
     <PublishAot>true</PublishAot>
+    <!-- MeshPreviewerControl 的 OpenGL 渲染需要 unsafe 指针操作（Silk.NET + fixed 固定缓冲） -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AssetRipper.TextureDecoder" Version="1.2.0" />
@@ -20,13 +22,29 @@
     <PackageReference Include="Avalonia.Themes.Simple" Version="11.0.1" />
 	<PackageReference Include="Avalonia.Diagnostics" Version="11.0.1" />
 	<PackageReference Include="AvaloniaEdit.TextMate" Version="11.0.1" />
+    <!-- Dock.Avalonia 多文档界面基础设施。
+         注意：本项目用 Avalonia 11.0.1，Dock.Avalonia 11.0.0.7 依赖 Avalonia>=11.0.0（开放式），
+         与 11.0.1 兼容。Dock.Avalonia.Themes.Simple 仅从 11.3.2 起发布，11.0.x 主题内置于 Dock.Avalonia
+         （/Themes/DockSimpleTheme.axaml）。Dock.Model 11.0.0.7 中工厂基类为 Dock.Model.Mvvm.Factory、
+         布局接口 IRootDock 位于 Dock.Model.Controls（与 UABEANext4 所用 11.3.x 命名略有差异）。 -->
+    <PackageReference Include="Dock.Avalonia" Version="11.0.0.7" />
+    <PackageReference Include="Dock.Model" Version="11.0.0.7" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="11.0.0.7" />
     <PackageReference Include="Mono.Cecil" Version="0.11.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3-beta1" />
     <PackageReference Include="Samboy063.LibCpp2IL" Version="2022.0.7.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <!-- Silk.NET.OpenGL：MeshPreviewerControl 用于在 Avalonia.OpenGL 之上获取类型安全的 GL 调用。
+         2.22.0 支持 net8.0，与 UABEANext4 一致。仅桌面端 Mesh 预览使用，Android 端排除该控件。 -->
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+  <!-- Android 专属代码在桌面构建时排除，由 UABEA.Android.csproj 通过源码链接单独编译 -->
+  <ItemGroup Condition="!$(DefineConstants.Contains('ANDROID'))">
+    <Compile Remove="Android\**" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Remove="Grammars\package.json" />
@@ -49,6 +67,9 @@
     <Reference Include="AssetsTools.NET.Texture">
       <HintPath>..\Libs\AssetsTools.NET.Texture.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UABEA.Core\UABEA.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Grammars\utxt\syntaxes\utxt.tmLanguage.json" />

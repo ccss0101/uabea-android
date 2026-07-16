@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels.Tools"
+             xmlns:hier="clr-namespace:UABEAvalonia.Logic.Hierarchy"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="450"
+             x:Class="UABEAvalonia.Views.Tools.HierarchyToolView"
+             x:DataType="vm:HierarchyToolViewModel">
+    <!--
+      Hierarchy 工具窗视图。顶部搜索框，中部 TreeView 递归显示 GameObject 层级，
+      底部排序复选框。SelectedItem 双向绑定回 ViewModel，选中变化时 VM 收集
+      component 并发送 AssetsSelectedMessage。双击节点切换展开/折叠。
+    -->
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶部搜索框 -->
+        <TextBox Grid.Row="0"
+                 Text="{Binding SearchText}"
+                 Watermark="Search..."
+                 Margin="4" />
+
+        <!-- 层级树 -->
+        <TreeView Grid.Row="1"
+                  Name="GameObjectTreeView"
+                  ItemsSource="{Binding RootItems}"
+                  SelectedItem="{Binding SelectedItem}"
+                  DoubleTapped="HierarchyTreeView_OnDoubleTapped"
+                  BorderThickness="0">
+            <TreeView.ItemTemplate>
+                <TreeDataTemplate DataType="{x:Type hier:HierarchyItem}" ItemsSource="{Binding Children}">
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" />
+                </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+            <TreeView.Styles>
+                <Style Selector="TreeViewItem" x:DataType="hier:HierarchyItem">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                </Style>
+            </TreeView.Styles>
+        </TreeView>
+
+        <!-- 底部排序复选框 -->
+        <Border Grid.Row="2"
+                BorderBrush="Gray"
+                BorderThickness="0,1,0,0"
+                Padding="8,4">
+            <CheckBox IsChecked="{Binding SortAlphabetically}"
+                      IsEnabled="{Binding !IsLoadingNewItems}"
+                      FontSize="11">
+                Sort root GameObjects alphabetically
+            </CheckBox>
+        </Border>
+
+    </Grid>
+</UserControl>

@@ -3,7 +3,22 @@
              xmlns:sys="clr-namespace:System;assembly=netstandard"
              xmlns:uabea="clr-namespace:UABEAvalonia"
              x:Class="UABEAvalonia.App">
-	<Application.Styles>
+  <Application.Resources>
+    <!--
+      P3-A 主题资源：通过 ThemeDictionaries 让 Avalonia 在 RequestedThemeVariant
+      变化时自动选择 Light/Dark 字典，所有 {DynamicResource XxxBrush} 引用
+      无需 C# 干预即可随主题刷新。Default 兜底取 Light。
+    -->
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceInclude Source="/Themes/Accents/SimpleLight.axaml" x:Key="Light" />
+        <ResourceInclude Source="/Themes/Accents/SimpleDark.axaml" x:Key="Dark" />
+        <ResourceInclude Source="/Themes/Accents/SimpleLight.axaml" x:Key="Default" />
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
 	  <SimpleTheme/>
 	  <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Simple.xaml"/>
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
@@ -17,4 +32,12 @@
       </Style.Resources>
     </Style>
   </Application.Styles>
+  <!--
+    P1 Docking：注册 ViewLocator 作为全局 DataTemplate，
+    DockControl 的 ContentPresenter 通过它把 dockable ViewModel 渲染成对应 View。
+    匹配规则：ViewModelBase 子类或 Dock.Model.Core.IDockable 实现。
+  -->
+  <Application.DataTemplates>
+    <uabea:ViewLocator />
+  </Application.DataTemplates>
 </Application>

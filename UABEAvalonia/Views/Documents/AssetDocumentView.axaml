@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels.Documents"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="UABEAvalonia.Views.Documents.AssetDocumentView"
+             x:DataType="vm:AssetDocumentViewModel">
+    <!--
+      资产文档视图（P1 占位）。当前仅显示工作区项名称；
+      后续阶段会接入 DataGrid 展示该 WorkspaceItem 的 AssetContainer 列表。
+    -->
+    <Border Padding="12">
+        <StackPanel Spacing="6">
+            <TextBlock Text="Asset Document"
+                       FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="{Binding WorkspaceItem.Name}" />
+            <TextBlock Text="Asset list rendering will be added in a later phase."
+                       Opacity="0.6" FontStyle="Italic" />
+        </StackPanel>
+    </Border>
+</UserControl>

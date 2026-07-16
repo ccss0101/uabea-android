@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels.Tools"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="450"
+             x:Class="UABEAvalonia.Views.Tools.WorkspaceExplorerToolView"
+             x:DataType="vm:WorkspaceExplorerToolViewModel">
+    <!--
+      Workspace Explorer 工具窗视图。TreeView 绑定到 RootItems，
+      选中项自动绑定回 WorkspaceExplorerToolViewModel.SelectedItem（双向），
+      ViewModel 通过 SelectedWorkspaceItemChangedMessage 通知主视图模型打开文档。
+      注意：SelectedItem 类型是 WorkspaceItem（位于 UABEA.Core），
+      但 TreeView 通过反射绑定，无需在 XAML 显式声明其类型。
+    -->
+    <TreeView ItemsSource="{Binding RootItems}"
+              SelectedItem="{Binding SelectedItem}">
+        <TreeView.ItemTemplate>
+            <TreeDataTemplate ItemsSource="{Binding Children}">
+                <TextBlock Text="{Binding Name}" />
+            </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+    </TreeView>
+</UserControl>

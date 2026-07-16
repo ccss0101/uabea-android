@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels.Tools"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="450"
+             x:Class="UABEAvalonia.Views.Tools.InspectorToolView"
+             x:DataType="vm:InspectorToolViewModel">
+    <!--
+      Inspector 工具窗视图。ItemsControl 绑定 ActiveAssets，
+      ViewModel 监听 AssetsSelectedMessage 自动更新列表。
+      AssetContainer 位于 UABEA.Core（namespace UABEAvalonia），
+      通过反射绑定访问 PathId / ClassId 字段，无需 xmlns 声明。
+    -->
+    <ScrollViewer Padding="8">
+        <ItemsControl ItemsSource="{Binding ActiveAssets}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="4">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding PathId}" FontFamily="Consolas,Monospace" />
+                            <TextBlock Text="{Binding ClassId}" Opacity="0.7" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

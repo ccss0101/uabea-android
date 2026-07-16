@@ -37,12 +37,18 @@
     </Reference>
   </ItemGroup>
 
-  <!-- Link UABEAvalonia 源码 -->
+  <!-- UABEA.Core 核心库（平台无关业务逻辑） -->
   <ItemGroup>
-    <Compile Include="..\..\UABEAvalonia\**\*.cs" Exclude="..\..\UABEAvalonia\obj\**;..\..\UABEAvalonia\bin\**;..\..\UABEAvalonia\Android\**;..\..\UABEAvalonia\Properties\**;..\..\UABEAvalonia\App.axaml.cs;..\..\UABEAvalonia\Program.cs;..\..\UABEAvalonia\Forms\MainWindow.axaml.cs" Link="UABEAvalonia\%(RecursiveDir)%(FileName)%(Extension)" />
+    <ProjectReference Include="..\..\UABEA.Core\UABEA.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Link UABEAvalonia 源码（已迁移到 UABEA.Core 的文件需排除，避免重复定义） -->
+  <!-- Dock 相关代码（ViewModels/Views/ViewLocator/DockMainWindow）桌面专属，Android 用自己的 MainView -->
+  <ItemGroup>
+    <Compile Include="..\..\UABEAvalonia\**\*.cs" Exclude="..\..\UABEAvalonia\obj\**;..\..\UABEAvalonia\bin\**;..\..\UABEAvalonia\Android\**;..\..\UABEAvalonia\Properties\**;..\..\UABEAvalonia\App.axaml.cs;..\..\UABEAvalonia\Program.cs;..\..\UABEAvalonia\Forms\MainWindow.axaml.cs;..\..\UABEAvalonia\Forms\SettingsWindow.axaml.cs;..\..\UABEAvalonia\Utils\FileUtils.cs;..\..\UABEAvalonia\Utils\PathUtils.cs;..\..\UABEAvalonia\Utils\SearchUtils.cs;..\..\UABEAvalonia\Workspace\**;..\..\UABEAvalonia\Config\**;..\..\UABEAvalonia\Logic\**;..\..\UABEAvalonia\ViewModels\**;..\..\UABEAvalonia\Views\**;..\..\UABEAvalonia\ViewLocator.cs;..\..\UABEAvalonia\DockMainWindow.axaml.cs;..\..\UABEAvalonia\Controls\MeshPreviewer\**" Link="UABEAvalonia\%(RecursiveDir)%(FileName)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
-    <AvaloniaXaml Include="..\..\UABEAvalonia\**\*.axaml" Exclude="..\..\UABEAvalonia\obj\**;..\..\UABEAvalonia\bin\**;..\..\UABEAvalonia\App.axaml;..\..\UABEAvalonia\Forms\MainWindow.axaml" Link="UABEAvalonia\%(RecursiveDir)%(FileName)%(Extension)" />
+    <AvaloniaXaml Include="..\..\UABEAvalonia\**\*.axaml" Exclude="..\..\UABEAvalonia\obj\**;..\..\UABEAvalonia\bin\**;..\..\UABEAvalonia\App.axaml;..\..\UABEAvalonia\Forms\MainWindow.axaml;..\..\UABEAvalonia\Forms\SettingsWindow.axaml;..\..\UABEAvalonia\Views\**;..\..\UABEAvalonia\DockMainWindow.axaml" Link="UABEAvalonia\%(RecursiveDir)%(FileName)%(Extension)" />
   </ItemGroup>
 
   <!-- UABEA Assets 资源 -->

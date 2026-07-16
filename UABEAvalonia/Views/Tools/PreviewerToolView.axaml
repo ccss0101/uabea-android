@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels.Tools"
+             xmlns:views="clr-namespace:UABEAvalonia.Views.Tools"
+             xmlns:mesh="clr-namespace:UABEAvalonia.Controls.MeshPreviewer"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
+             x:Class="UABEAvalonia.Views.Tools.PreviewerToolView"
+             x:DataType="vm:PreviewerToolViewModel"
+             Background="{DynamicResource DockThemeListBackgroundBrush}">
+    <!--
+      统一 Previewer 面板视图。根据 PreviewType 切换显示：
+        - Text  : 只读 TextBox 显示 PreviewText
+        - Image : 嵌入 ImagePreviewView
+        - Mesh  : 嵌入 MeshPreviewerControl（OpenGL 渲染）
+        - None  : 显示提示文本
+      通过 IsVisible 绑定到 IsTextPreview / IsImagePreview / IsMeshPreview / IsNonePreview 切换。
+    -->
+    <Grid>
+        <!-- 文本预览 -->
+        <TextBox IsVisible="{Binding IsTextPreview}"
+                 Text="{Binding PreviewText}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="Consolas,Menlo,Monospace"
+                 BorderThickness="0"
+                 Padding="4"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+
+        <!-- 图像预览 -->
+        <views:ImagePreviewView IsVisible="{Binding IsImagePreview}" />
+
+        <!-- Mesh 3D 预览：OpenGL 控件，ActiveMesh 绑定到 ViewModel -->
+        <mesh:MeshPreviewerControl IsVisible="{Binding IsMeshPreview}"
+                                   ActiveMesh="{Binding ActiveMesh}" />
+
+        <!-- 无预览提示 -->
+        <StackPanel IsVisible="{Binding IsNonePreview}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="6">
+            <TextBlock Text="Previewer"
+                       FontSize="14"
+                       Opacity="0.5"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="选中资产后此处显示预览"
+                       FontSize="11"
+                       Opacity="0.4"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>

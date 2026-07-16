@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="UABEAvalonia.Views.MainView"
+             x:DataType="vm:MainViewModel">
+    <!--
+      Dock 主视图。结构参考 UABEANext4 MainView：
+        Menu 顶部菜单 → DockControl 主区 → 底部状态条
+      DockControl 来自 Dock.Avalonia 11.0.0.7（默认 xmlns 即可用，无需前缀）。
+      dockable ViewModel 的渲染通过 App.axaml 注册的 ViewLocator 完成，
+      约定 XxxViewModel -> XxxView（位于 Views/{Documents,Tools} 下）。
+    -->
+    <Grid RowDefinitions="Auto,*,22" Margin="4">
+        <!-- 顶部菜单 -->
+        <Menu Grid.Row="0" Padding="0,6">
+            <MenuItem Header="File">
+                <MenuItem Header="Open" Command="{Binding FileOpenCommand}"
+                          HotKey="Ctrl+O" InputGesture="Ctrl+O" />
+                <MenuItem Header="Close All" Command="{Binding FileCloseAllCommand}"
+                          HotKey="Ctrl+Shift+W" InputGesture="Ctrl+Shift+W"
+                          IsEnabled="{Binding Workspace.RootItems.Count}" />
+                <MenuItem Header="Settings" Command="{Binding FileSettingsCommand}" />
+                <MenuItem Header="Exit" Command="{Binding FileExitCommand}"
+                          HotKey="Ctrl+Q" InputGesture="Ctrl+Q" />
+            </MenuItem>
+        </Menu>
+
+        <!-- Dock 主区域，具体 dockable 渲染交给 ViewLocator + 各 XxxView -->
+        <DockControl Layout="{Binding Layout}" Margin="4" Grid.Row="1" />
+
+        <!-- 底部状态条（占位，后续阶段接入 Workspace.ProgressValue） -->
+        <Grid Grid.Row="2" Margin="4,0,0,4">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Workspace.RootItems.Count}"
+                           VerticalAlignment="Center" Opacity="0.7" />
+                <TextBlock Text="file(s) loaded"
+                           VerticalAlignment="Center" Opacity="0.7" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

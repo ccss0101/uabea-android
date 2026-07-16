@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:UABEAvalonia.ViewModels"
+             xmlns:cfg="clr-namespace:UABEAvalonia;assembly=UABEA.Core"
+             mc:Ignorable="d" d:DesignWidth="520" d:DesignHeight="600"
+             x:Class="UABEAvalonia.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <!--
+      Settings 面板：通过 ItemsControl + DataTemplate 反射渲染配置项。
+      每项上下文为 ConfigurationItemBase 派生类（Bool/Int/Enum），
+      通过 UserControl.DataTemplates 自动按类型选择模板。
+    -->
+    <UserControl.DataTemplates>
+        <!-- 布尔项：CheckBox -->
+        <DataTemplate DataType="{x:Type cfg:ConfigurationBooleanItem}">
+            <StackPanel Margin="0,6" Spacing="2">
+                <CheckBox IsChecked="{Binding Value}" Content="{Binding Title}" />
+                <TextBlock Text="{Binding Description}" Opacity="0.6"
+                           TextWrapping="Wrap" Margin="24,0,0,0" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 整数项：NumericUpDown + 描述 -->
+        <DataTemplate DataType="{x:Type cfg:ConfigurationIntegerItem}">
+            <StackPanel Margin="0,6" Spacing="2">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <NumericUpDown Value="{Binding Value}"
+                               Minimum="{Binding RangeMin}"
+                               Maximum="{Binding RangeMax}"
+                               Width="200" HorizontalAlignment="Left" />
+                <TextBlock Text="{Binding Description}" Opacity="0.6"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 枚举项：ComboBox -->
+        <DataTemplate DataType="{x:Type cfg:ConfigurationEnumItem}">
+            <StackPanel Margin="0,6" Spacing="2">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding EnumValues}"
+                          SelectedItem="{Binding Value}"
+                          Width="200" HorizontalAlignment="Left" />
+                <TextBlock Text="{Binding Description}" Opacity="0.6"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+        <TextBlock Grid.Row="0" Text="Settings"
+                   FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Items}" />
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+            <Button Content="Close" Command="{Binding CloseCommand}"
+                    Padding="16,4" />
+        </StackPanel>
+    </Grid>
+</UserControl>

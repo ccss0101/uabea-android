@@ -48,6 +48,7 @@ namespace UABEAvalonia
             menuExit.Click += MenuExit_Click;
             menuToggleDarkTheme.Click += MenuToggleDarkTheme_Click;
             menuToggleCpp2Il.Click += MenuToggleCpp2Il_Click;
+            menuSettings.Click += MenuSettings_Click;
             menuAbout.Click += MenuAbout_Click;
             btnExport.Click += BtnExport_Click;
             btnImport.Click += BtnImport_Click;
@@ -65,7 +66,7 @@ namespace UABEAvalonia
 
             AddHandler(DragDrop.DropEvent, Drop);
 
-            ThemeHandler.UseDarkTheme = ConfigurationManager.Settings.UseDarkTheme;
+            ThemeHandler.ApplyConfigurationTheme(ConfigurationManager.Settings.ThemeType);
         }
 
         private async void MainWindow_Initialized(object? sender, EventArgs e)
@@ -515,17 +516,25 @@ namespace UABEAvalonia
 
         private void MenuToggleDarkTheme_Click(object? sender, RoutedEventArgs e)
         {
+            // 向后兼容 toggle：在 Light/Dark 之间切换并同步到 ThemeType
+            // ThemeType 变更会触发 ConfigurationManager 防抖保存
             ConfigurationManager.Settings.UseDarkTheme = !ConfigurationManager.Settings.UseDarkTheme;
-            ThemeHandler.UseDarkTheme = ConfigurationManager.Settings.UseDarkTheme;
+            ThemeHandler.ApplyConfigurationTheme(ConfigurationManager.Settings.ThemeType);
         }
 
-        private async void MenuToggleCpp2Il_Click(object? sender, RoutedEventArgs e)
+        private void MenuToggleCpp2Il_Click(object? sender, RoutedEventArgs e)
         {
             bool useCpp2Il = !ConfigurationManager.Settings.UseCpp2Il;
             ConfigurationManager.Settings.UseCpp2Il = useCpp2Il;
 
-            await MessageBoxUtil.ShowDialog(this, "Note",
+            _ = MessageBoxUtil.ShowDialog(this, "Note",
                 $"Use Cpp2Il is set to: {useCpp2Il.ToString().ToLower()}");
+        }
+
+        private void MenuSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            var window = new Forms.SettingsWindow();
+            window.ShowDialog(this);
         }
 
         private async void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)

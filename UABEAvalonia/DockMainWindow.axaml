@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:v="clr-namespace:UABEAvalonia.Views"
+        xmlns:vm="clr-namespace:UABEAvalonia.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        x:Class="UABEAvalonia.DockMainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/uabeavalonia16.ico"
+        Title="{Binding WindowTitle}"
+        WindowStartupLocation="CenterScreen">
+    <!--
+      Dock 主窗口：包含 MainView（菜单 + DockControl + 状态条）。
+      与现有 MainWindow.axaml 并存，作为可选入口：
+        - MainWindow.axaml: 旧版单 bundle 编辑器（保留不动）
+        - DockMainWindow.axaml: 新版 Dock 多文档界面（P1 引入）
+      通过 App.axaml.cs 的配置切换。
+    -->
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Panel>
+        <v:MainView />
+    </Panel>
+</Window>

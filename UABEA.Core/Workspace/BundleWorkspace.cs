@@ -1,6 +1,5 @@
-﻿using AssetsTools.NET;
+using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using Avalonia.Media;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,7 +14,7 @@ namespace UABEAvalonia
     {
         public BundleFileInstance? BundleInst { get; set; }
         public AssetsManager am { get; }
-        
+
         public ObservableCollection<BundleWorkspaceItem> Files { get; }
         public Dictionary<string, BundleWorkspaceItem> FileLookup { get; }
         public HashSet<string> RemovedFiles { get; }
@@ -111,7 +110,7 @@ namespace UABEAvalonia
         public List<BundleReplacer> GetReplacers()
         {
             List<BundleReplacer> replacers = new List<BundleReplacer>();
-            
+
             foreach (string name in RemovedFiles)
             {
                 BundleReplacer replacer = new BundleRemover(name);
@@ -136,7 +135,7 @@ namespace UABEAvalonia
             return replacers;
         }
     }
-    
+
     public class BundleWorkspaceItem
     {
         public string Name { get; set; }
@@ -150,32 +149,22 @@ namespace UABEAvalonia
         public bool IsModified { get; }
         public Stream Stream { get; }
 
-        private static SolidColorBrush AssetsBrushDark = new SolidColorBrush(Avalonia.Media.Color.Parse("#b17fd7"));
-        private static SolidColorBrush AssetsBrushLight = new SolidColorBrush(Avalonia.Media.Color.Parse("#642c8f"));
-        private static SolidColorBrush RessBrushDark = new SolidColorBrush(Avalonia.Media.Color.Parse("#569cd6"));
-        private static SolidColorBrush RessBrushLight = new SolidColorBrush(Avalonia.Media.Color.Parse("#0000ff"));
-        private static SolidColorBrush ResourceBrushDark = new SolidColorBrush(Avalonia.Media.Color.Parse("#ffd700"));
-        private static SolidColorBrush ResourceBrushLight = new SolidColorBrush(Avalonia.Media.Color.Parse("#9e7e00"));
-        private static SolidColorBrush EtcBrushDark = new SolidColorBrush(Avalonia.Media.Color.Parse("#ee00ee"));
-        private static SolidColorBrush EtcBrushLight = new SolidColorBrush(Avalonia.Media.Color.Parse("#ee00ee"));
-        
-        private static SolidColorBrush AssetsBrush => ThemeHandler.UseDarkTheme ? AssetsBrushDark : AssetsBrushLight;
-        private static SolidColorBrush RessBrush => ThemeHandler.UseDarkTheme ? RessBrushDark : RessBrushLight;
-        private static SolidColorBrush ResourceBrush => ThemeHandler.UseDarkTheme ? ResourceBrushDark : ResourceBrushLight;
-        private static SolidColorBrush EtcBrush => ThemeHandler.UseDarkTheme ? EtcBrushDark : EtcBrushLight;
-
-        public IBrush Color
+        /// <summary>
+        /// 文件类型分类，供 UI 层做颜色映射。取代了原本直接返回 IBrush 的 Color 属性，
+        /// 让核心库不再依赖 Avalonia.Media。
+        /// </summary>
+        public BundleItemType ItemType
         {
             get
             {
                 if (IsSerialized)
-                    return AssetsBrush;
+                    return BundleItemType.Serialized;
                 else if (Name.EndsWith(".resS"))
-                    return RessBrush;
+                    return BundleItemType.Ress;
                 else if (Name.EndsWith(".resource"))
-                    return ResourceBrush;
+                    return BundleItemType.Resource;
                 else
-                    return EtcBrush;
+                    return BundleItemType.Etc;
             }
         }
 

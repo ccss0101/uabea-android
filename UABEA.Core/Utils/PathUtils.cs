@@ -1,4 +1,4 @@
-﻿using AssetsTools.NET.Extra;
+using AssetsTools.NET.Extra;
 using System;
 using System.Collections.Generic;
 using System.IO;

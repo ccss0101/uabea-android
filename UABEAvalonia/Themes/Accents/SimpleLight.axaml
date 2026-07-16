@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Light 主题资源字典。P3-A 引入：将原散落在 C# 中的硬编码 brush
+      集中到 axaml 资源，配合 ThemeDictionaries 自动随 RequestedThemeVariant 切换。
+      颜色值取自原 BundleItemColorConverter / AssetDataTreeView 的 Light 分支。
+    -->
+    <!-- Accent -->
+    <SolidColorBrush x:Key="ThemeAccentBrush" Color="#007ACC" />
+    <SolidColorBrush x:Key="DockThemeAccentBrush" Color="#007ACC" />
+
+    <!-- 工作区项类型着色（对应 BundleItemType） -->
+    <SolidColorBrush x:Key="WorkspaceItemBundleBrush" Color="#642C8F" />
+    <SolidColorBrush x:Key="WorkspaceItemAssetsBrush" Color="#642C8F" />
+    <SolidColorBrush x:Key="WorkspaceItemResourceBrush" Color="#9E7E00" />
+    <SolidColorBrush x:Key="WorkspaceItemOtherBrush" Color="#0000FF" />
+    <SolidColorBrush x:Key="WorkspaceItemEtcBrush" Color="#EE00EE" />
+
+    <!-- 资产树视图语法着色（对应 AssetDataTreeView） -->
+    <SolidColorBrush x:Key="TypeTextPrimitiveBrush" Color="#0000FF" />
+    <SolidColorBrush x:Key="TypeTextTypeBrush" Color="#2B91AF" />
+    <SolidColorBrush x:Key="TypeTextStringBrush" Color="#A31515" />
+    <SolidColorBrush x:Key="TypeTextValueBrush" Color="#5B2DA8" />
+    <SolidColorBrush x:Key="TypeTextPlainBrush" Color="#000000" />
+    <SolidColorBrush x:Key="TypeTextThemeBrush" Color="#642C8F" />
+
+    <!-- CaptionButtons（窗口标题栏按钮） -->
+    <SolidColorBrush x:Key="CaptionButtonForegroundBrush" Color="#1F1F1F" />
+    <SolidColorBrush x:Key="CaptionButtonHoverBgBrush" Color="#E5E5E5" />
+    <SolidColorBrush x:Key="CaptionButtonCloseHoverBgBrush" Color="#E81123" />
+
+    <!-- TabItem -->
+    <SolidColorBrush x:Key="TabItemHeaderSelectedBackgroundBrush" Color="#119EDA" />
+    <SolidColorBrush x:Key="TabItemHeaderSelectedForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TabItemHeaderHoverBackgroundBrush" Color="#33AEEA" />
+    <SolidColorBrush x:Key="TabItemContentBackgroundBrush" Color="#F0F0F0" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundBrush" Color="#F0F0F0" />
+    <SolidColorBrush x:Key="TabItemControlHeaderBackgroundBrush" Color="#119EDA" />
+
+    <!-- ScrollBarThumb -->
+    <SolidColorBrush x:Key="ScrollBarThumbBackgroundBrush" Color="#CDCDCD" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#A0A0A0" />
+    <SolidColorBrush x:Key="ScrollBarThumbPressedBrush" Color="#787878" />
+</ResourceDictionary>

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="UABEAvalonia.Views.Documents.BlankDocumentView">
+    <!--
+      占位文档视图。在 DocumentDock 中作为初始 / 新建标签的展示内容。
+      后续阶段接入实际编辑界面后可移除。
+    -->
+    <Border Padding="16">
+        <StackPanel Spacing="8">
+            <TextBlock Text="New Tab"
+                       FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="Use File > Open to load a bundle or assets file."
+                       Opacity="0.7" />
+        </StackPanel>
+    </Border>
+</UserControl>

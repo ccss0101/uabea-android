@@ -26,56 +26,31 @@ namespace UABEAvalonia
 
         private AvaloniaList<TreeViewItem> ListItems => (AvaloniaList<TreeViewItem>)ItemsSource;
 
-        private static SolidColorBrush PrimNameBrushDark = SolidColorBrush.Parse("#569cd6");
-        private static SolidColorBrush PrimNameBrushLight = SolidColorBrush.Parse("#0000ff");
-        private static SolidColorBrush TypeNameBrushDark = SolidColorBrush.Parse("#4ec9b0");
-        private static SolidColorBrush TypeNameBrushLight = SolidColorBrush.Parse("#2b91af");
-        private static SolidColorBrush StringBrushDark = SolidColorBrush.Parse("#d69d85");
-        private static SolidColorBrush StringBrushLight = SolidColorBrush.Parse("#a31515");
-        private static SolidColorBrush ValueBrushDark = SolidColorBrush.Parse("#b5cea8");
-        private static SolidColorBrush ValueBrushLight = SolidColorBrush.Parse("#5b2da8");
+        // P3-A：移除硬编码 Dark/Light brush 对，改为通过 TryFindResource 查找
+        // SimpleLight/SimpleDark.axaml 中的 TypeText*Brush 资源，自动随主题切换。
+        private static readonly SolidColorBrush FallbackBrush = new SolidColorBrush(Colors.Gray);
 
         private MenuItem menuEditAsset;
         private MenuItem menuVisitAsset;
         private MenuItem menuExpandSel;
         private MenuItem menuCollapseSel;
 
-        private SolidColorBrush PrimNameBrush
+        private static IBrush LookupBrush(string key)
         {
-            get
+            var app = Avalonia.Application.Current;
+            if (app != null
+                && app.TryFindResource(key, app.ActualThemeVariant, out object? resource)
+                && resource is IBrush brush)
             {
-                return ThemeHandler.UseDarkTheme
-                    ? PrimNameBrushDark
-                    : PrimNameBrushLight;
+                return brush;
             }
+            return FallbackBrush;
         }
-        private SolidColorBrush TypeNameBrush
-        {
-            get
-            {
-                return ThemeHandler.UseDarkTheme
-                    ? TypeNameBrushDark
-                    : TypeNameBrushLight;
-            }
-        }
-        private SolidColorBrush StringBrush
-        {
-            get
-            {
-                return ThemeHandler.UseDarkTheme
-                    ? StringBrushDark
-                    : StringBrushLight;
-            }
-        }
-        private SolidColorBrush ValueBrush
-        {
-            get
-            {
-                return ThemeHandler.UseDarkTheme
-                    ? ValueBrushDark
-                    : ValueBrushLight;
-            }
-        }
+
+        private IBrush PrimNameBrush => LookupBrush("TypeTextPrimitiveBrush");
+        private IBrush TypeNameBrush => LookupBrush("TypeTextTypeBrush");
+        private IBrush StringBrush => LookupBrush("TypeTextStringBrush");
+        private IBrush ValueBrush => LookupBrush("TypeTextValueBrush");
 
         public AssetDataTreeView() : base()
         {

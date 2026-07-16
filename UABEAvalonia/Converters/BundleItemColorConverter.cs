@@ -47,7 +47,7 @@ namespace UABEAvalonia
         {
             var app = Application.Current;
             if (app != null
-                && app.TryFindResource(key, app.ActualThemeVariant, out object? resource)
+                && app.TryGetResource(key, app.ActualThemeVariant, out object? resource)
                 && resource is IBrush brush)
             {
                 return brush;

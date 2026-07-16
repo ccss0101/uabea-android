@@ -36,7 +36,20 @@
   <PropertyGroup>
     <UABEANativeConfig>unknown</UABEANativeConfig>
   </PropertyGroup>
-  
+
+  <!-- P3-B：新 native libs 路径（textureencoder + cuttlefish + PVRTexLib）。
+       与旧 TexToolWrap 路径并存作为过渡，便于后续替换 AssetsTools.NET.Texture 后切换。
+       NativeLibs 目录布局参照 /tmp/uabeanext/NativeLibs/。 -->
+  <PropertyGroup>
+    <NativeLibsDir>$(SolutionDir)NativeLibs\$(UABEANativeConfig)</NativeLibsDir>
+    <TextureEncoderBinPath Condition="'$(UABEANativeConfig)' == 'linux-x64'">$(NativeLibsDir)\libtextureencoder.so</TextureEncoderBinPath>
+    <TextureEncoderBinPath Condition="'$(UABEANativeConfig)' == 'win-x64'">$(NativeLibsDir)\textureencoder.dll</TextureEncoderBinPath>
+    <CuttlefishBinPath Condition="'$(UABEANativeConfig)' == 'linux-x64'">$(NativeLibsDir)\libcuttlefish.so.2.10</CuttlefishBinPath>
+    <CuttlefishBinPath Condition="'$(UABEANativeConfig)' == 'win-x64'">$(NativeLibsDir)\cuttlefish.dll</CuttlefishBinPath>
+    <NewPVRTexLibBinPath Condition="'$(UABEANativeConfig)' == 'linux-x64'">$(NativeLibsDir)\libPVRTexLib.so</NewPVRTexLibBinPath>
+    <NewPVRTexLibBinPath Condition="'$(UABEANativeConfig)' == 'win-x64'">$(NativeLibsDir)\PVRTexLib.dll</NewPVRTexLibBinPath>
+  </PropertyGroup>
+
   <!-- this will only execute once while building the solution -->
   <!-- this should set UABEANativeConfig with the config, but  -->
   <!-- the actual copying has to be copy and pasted to work    -->
@@ -100,29 +113,40 @@
     <PropertyGroup>
       <UABEABinDir>$(SolutionDir)UABEAvalonia\$(OutputPath)</UABEABinDir>
     </PropertyGroup>
-    
-    <!-- copy textoolwrap and deps -->
+
+    <!-- copy textoolwrap and deps (legacy) -->
     <Copy SourceFiles="$(TexToolWrapBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
     <Copy SourceFiles="$(PVRTexToolBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
     <Copy SourceFiles="$(ISPCBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
     <Copy SourceFiles="$(CrunchBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
-    
+
+    <!-- P3-B：同时复制新 native libs（textureencoder + cuttlefish + 新版 PVRTexLib）。
+         新增而非替换，便于后续切换 AssetsTools.NET.Texture 后无缝接管。 -->
+    <Copy SourceFiles="$(TextureEncoderBinPath)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" Condition="'$(TextureEncoderBinPath)' != ''" />
+    <Copy SourceFiles="$(CuttlefishBinPath)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" Condition="'$(CuttlefishBinPath)' != ''" />
+    <Copy SourceFiles="$(NewPVRTexLibBinPath)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" Condition="'$(NewPVRTexLibBinPath)' != ''" />
+
     <!-- copy textureplugin -->
     <Copy SourceFiles="$(OutputPath)TexturePlugin.dll" DestinationFolder="$(UABEABinDir)plugins" ContinueOnError="true" />
   </Target>
-  
+
   <!-- publish event -->
-  <Target Name="CopyLibrariesPublish" DependsOnTargets="BuildNativeAndSetConfig" AfterTargets="Publish" Condition="'$(SolutionDir)' != '*Undefined*'">    
+  <Target Name="CopyLibrariesPublish" DependsOnTargets="BuildNativeAndSetConfig" AfterTargets="Publish" Condition="'$(SolutionDir)' != '*Undefined*'">
     <PropertyGroup>
       <UABEABinDir>$(SolutionDir)UABEAvalonia\$(PublishDir)</UABEABinDir>
     </PropertyGroup>
-    
-    <!-- copy textoolwrap and deps -->
+
+    <!-- copy textoolwrap and deps (legacy) -->
     <Copy SourceFiles="$(TexToolWrapBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
     <Copy SourceFiles="$(PVRTexToolBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
     <Copy SourceFiles="$(ISPCBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
     <Copy SourceFiles="$(CrunchBinDir)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" />
-    
+
+    <!-- P3-B：同时复制新 native libs（同 build） -->
+    <Copy SourceFiles="$(TextureEncoderBinPath)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" Condition="'$(TextureEncoderBinPath)' != ''" />
+    <Copy SourceFiles="$(CuttlefishBinPath)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" Condition="'$(CuttlefishBinPath)' != ''" />
+    <Copy SourceFiles="$(NewPVRTexLibBinPath)" DestinationFolder="$(UABEABinDir)runtimes\$(UABEANativeConfig)\native" ContinueOnError="true" Condition="'$(NewPVRTexLibBinPath)' != ''" />
+
     <!-- copy textureplugin -->
     <Copy SourceFiles="$(OutputPath)TexturePlugin.dll" DestinationFolder="$(UABEABinDir)plugins" ContinueOnError="true" />
   </Target>

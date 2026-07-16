@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:android="clr-namespace:UABEA.Android"
+             x:Class="UABEA.Android.HierarchyView">
+    <Border Background="#80000000"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="#222" CornerRadius="8" Padding="16"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MinWidth="360" MaxWidth="560" MaxHeight="720">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Text="场景层级" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" Name="errorText" FontSize="12" Foreground="#ff6666" Margin="0,0,0,8" IsVisible="False" TextWrapping="Wrap"/>
+                <TreeView Grid.Row="2" Name="hierarchyTree"
+                          MinHeight="200" MaxHeight="340"
+                          Background="#333" BorderThickness="1" BorderBrush="#444" Margin="0,0,0,8">
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate DataType="{x:Type android:HierarchyNode}" ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding Name}" Foreground="White" FontSize="13" Margin="2,0"/>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+                <TextBlock Grid.Row="3" Text="Components" FontSize="13" FontWeight="Bold" Foreground="White" Margin="0,4,0,4"/>
+                <ListBox Grid.Row="4" Name="componentsList"
+                         MinHeight="80" MaxHeight="160"
+                         Background="#333" BorderThickness="1" BorderBrush="#444">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Foreground="White" FontSize="12" Margin="2"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                    <Button Name="btnClose" Content="关闭" Height="40" MinWidth="90"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

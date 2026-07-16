@@ -66,17 +66,23 @@
             <!-- 单项操作按钮 -->
             <WrapPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,4">
                 <Button Name="btnPreview" Content="预览" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnViewData" Content="查看数据" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnEditData" Content="编辑数据" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnInfo" Content="Info" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnExport" Content="导出" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnImport" Content="导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnImportRaw" Content="Raw导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnBatchImportRaw" Content="批量导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnSearch" Content="搜索" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnContinueSearch" Content="继续搜" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnGoTo" Content="跳转" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnFilterType" Content="类型过滤" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnHierarchy" Content="层级" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnDump" Content="Dump" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnImportDump" Content="Dump导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnRename" Content="重命名" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnRemove" Content="删除" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnAddAsset" Content="新增" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
             </WrapPanel>
 
             <!-- 日志 -->
@@ -233,6 +239,42 @@
                 Background="#80000000"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <android:FilterTypeView Name="filterTypeView"/>
+        </Border>
+        <!-- 查看数据(类型树) overlay -->
+        <Border Name="dataOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:DataView Name="dataView"/>
+        </Border>
+        <!-- 编辑数据 overlay -->
+        <Border Name="editDataOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:EditDataView Name="editDataView"/>
+        </Border>
+        <!-- 新增资产 overlay -->
+        <Border Name="addAssetOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:AddAssetView Name="addAssetView"/>
+        </Border>
+        <!-- 文件信息 overlay -->
+        <Border Name="infoOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:AssetInfoView Name="assetInfoView"/>
+        </Border>
+        <!-- 场景层级 overlay -->
+        <Border Name="hierarchyOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:HierarchyView Name="hierarchyView"/>
+        </Border>
+        <!-- Dump 批量导入 overlay -->
+        <Border Name="importDumpOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:ImportDumpView Name="importDumpView"/>
         </Border>
 
         <!-- 内置文件选择器弹出层：避免系统文件选择器导致应用掉后台被回收。

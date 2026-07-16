@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:android="clr-namespace:UABEA.Android"
+             x:Class="UABEA.Android.DataView">
+    <Border Background="#80000000"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="#222" CornerRadius="8" Padding="16"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MinWidth="320" MaxWidth="600" MaxHeight="640">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <TextBlock Grid.Row="0" Text="查看数据 - 类型树" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" Name="lblStatus" FontSize="11" Foreground="#aaa" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                <TreeView Grid.Row="2" Name="tree" Background="Transparent" BorderThickness="0" Padding="2" MinHeight="200">
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate DataType="{x:Type android:DataTreeNode}" ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding Display}" Foreground="#eee" FontSize="13" TextWrapping="NoWrap"/>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+                <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+                    <Button Name="btnClose" Content="关闭" Height="40" MinWidth="90"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

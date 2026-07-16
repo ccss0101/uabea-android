@@ -67,6 +67,12 @@ namespace UABEA.Android
         private int _previewTexWidth;
         private int _previewTexHeight;
 
+        // 新视图相关：编辑数据 / 单项 Raw 导入 / Dump 批量导入
+        private AssetContainer? _editDataTarget;
+        private AssetListItem? _pendingImportRawItem;
+        private List<AssetContainer> _pendingDumpSelection = new();
+        private ImportDumpView.DumpFormat _pendingDumpFormat = ImportDumpView.DumpFormat.Text;
+
         /// <summary>内置文件选择器的挂起操作类型</summary>
         private enum PendingFileAction
         {
@@ -74,6 +80,8 @@ namespace UABEA.Android
             Import,      // 导入替换文件
             ImportAll,   // 批量导入到 bundle
             BatchImportRaw, // 资产级批量导入 raw
+            ImportRawAsset,  // 单项 Raw 导入
+            ImportDumpDir,   // Dump 批量导入目录
             ExportItem,  // 导出单项
             ExportAll,   // 批量导出到目录
             SaveBundle,  // 保存 bundle
@@ -113,6 +121,13 @@ namespace UABEA.Android
             btnReplaceTexture.Click += BtnReplaceTexture_Click;
             btnSaveText.Click += BtnSaveText_Click;
             btnClosePreview.Click += (s, e) => { previewOverlay.IsVisible = false; };
+
+            btnViewData.Click += BtnViewData_Click;
+            btnEditData.Click += BtnEditData_Click;
+            btnImportRaw.Click += BtnImportRaw_Click;
+            btnImportDump.Click += BtnImportDump_Click;
+            btnAddAsset.Click += BtnAddAsset_Click;
+            btnHierarchy.Click += BtnHierarchy_Click;
 
             btnSettings.Click += BtnSettings_Click;
             btnSettingsClose.Click += (s, e) =>
@@ -286,6 +301,14 @@ namespace UABEA.Android
                         Log($"资产级批量导入目录: {path}");
                         ShowImportBatchView(path);
                         break;
+                    case PendingFileAction.ImportRawAsset:
+                        Log($"Raw 导入: {path}");
+                        await DoImportRawAsset(_pendingImportRawItem, path);
+                        break;
+                    case PendingFileAction.ImportDumpDir:
+                        Log($"Dump 导入目录: {path}");
+                        ShowImportDumpView(path, _pendingDumpSelection, _pendingDumpFormat);
+                        break;
                     case PendingFileAction.SaveBundle:
                         Log($"保存到: {path}");
                         await DoSaveBundleToPath(path);
@@ -320,10 +343,62 @@ namespace UABEA.Android
             fileBrowserOverlay.IsVisible = false;
         }
 
+        /// <summary>合并 Unity .split 文件(.split0/.split1/...)为一个临时文件</summary>
+        private async Task<string?> MergeSplitFiles(string split0Path)
+        {
+            try
+            {
+                string baseName = Path.GetFileNameWithoutExtension(split0Path);
+                if (baseName.EndsWith(".split0", StringComparison.OrdinalIgnoreCase))
+                    baseName = baseName.Substring(0, baseName.Length - ".split0".Length);
+                string dir = Path.GetDirectoryName(split0Path) ?? "";
+                var splitFiles = Directory.GetFiles(dir, baseName + ".split*")
+                    .Where(f =>
+                    {
+                        string name = Path.GetFileName(f);
+                        if (!name.StartsWith(baseName + ".split")) return false;
+                        string suffix = name.Substring((baseName + ".split").Length);
+                        return int.TryParse(suffix, out _);
+                    })
+                    .OrderBy(f => int.Parse(Path.GetFileName(f).Substring((baseName + ".split").Length)))
+                    .ToList();
+
+                if (splitFiles.Count == 0) return split0Path;
+
+                Log($"检测到 .split 文件,合并 {splitFiles.Count} 个分片...");
+                string tempPath = Path.Combine(AppPaths.GetCacheDir(), baseName);
+                using (var outStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+                {
+                    foreach (var split in splitFiles)
+                    {
+                        using (var inStream = File.OpenRead(split))
+                        {
+                            await inStream.CopyToAsync(outStream);
+                        }
+                    }
+                }
+                Log($"合并完成: {Path.GetFileName(tempPath)}");
+                return tempPath;
+            }
+            catch (Exception ex)
+            {
+                Log("合并 .split 失败: " + ex.Message);
+                return null;
+            }
+        }
+
         private async Task OpenFile(string path)
         {
             try
             {
+                // .split 文件合并(Unity 把大 bundle 分成 .split0/.split1/...)
+                if (path.EndsWith(".split0", StringComparison.OrdinalIgnoreCase))
+                {
+                    var merged = await MergeSplitFiles(path);
+                    if (merged == null) { Log("合并 .split 失败"); return; }
+                    path = merged;
+                }
+
                 var fileType = FileTypeDetector.DetectFileType(path);
                 Log($"文件类型: {fileType}");
 
@@ -475,6 +550,12 @@ namespace UABEA.Android
             bool hasSel = assetList.SelectedItems.Count > 0;
             bool isBundle = _bundleInst != null;
             bool isAssets = _standaloneAssetsInst != null;
+            // 仅当选中真正的资产（非 bundle 条目）时启用资产级操作
+            var firstSel = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+            bool selIsAsset = hasSel && firstSel != null && firstSel.Container != null;
+            // 是否打开过 .assets 文件（独立或 bundle 内均可）
+            bool hasAssetsFile = _standaloneAssetsInst != null || _assetWorkspace != null;
+
             btnPreview.IsEnabled = hasSel;
             btnInfo.IsEnabled = hasSel;
             btnExport.IsEnabled = hasSel;
@@ -487,6 +568,14 @@ namespace UABEA.Android
             btnContinueSearch.IsEnabled = isAssets && _navSearching;
             btnGoTo.IsEnabled = hasSel && isAssets;
             btnFilterType.IsEnabled = isAssets;
+
+            // 新视图按钮
+            btnViewData.IsEnabled = selIsAsset;
+            btnEditData.IsEnabled = selIsAsset;
+            btnImportRaw.IsEnabled = selIsAsset;
+            btnImportDump.IsEnabled = selIsAsset;
+            btnAddAsset.IsEnabled = hasAssetsFile;
+            btnHierarchy.IsEnabled = hasAssetsFile;
         }
 
         /// <summary>设置 bundle 相关按钮的启用状态</summary>
@@ -1028,75 +1117,312 @@ namespace UABEA.Android
         }
 
         // ==================== Info ====================
+        // 打开 AssetInfoView 显示完整文件信息（替代原日志输出）
         private void BtnInfo_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
-            if (item == null) return;
+            AssetsFileInstance? fileInst = _standaloneAssetsInst;
+            if (fileInst == null)
+            {
+                // 优先用选中资产的 FileInstance（独立 .assets 模式或 bundle 内子 .assets）
+                var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+                if (item?.Container != null)
+                    fileInst = item.Container.FileInstance;
+                else if (item?.FileInstance != null)
+                    fileInst = item.FileInstance;
+            }
+            if (fileInst == null) { Log("无文件信息可显示（请打开 .assets 文件或选中资产）"); return; }
 
+            assetInfoView.Confirmed -= AssetInfoView_Confirmed;
+            assetInfoView.Confirmed += AssetInfoView_Confirmed;
+            assetInfoView.Initialize(fileInst, _assetWorkspace);
+            infoOverlay.IsVisible = true;
+        }
+
+        private void AssetInfoView_Confirmed(object? sender, bool e)
+        {
+            infoOverlay.IsVisible = false;
+        }
+
+        // ==================== 新视图：查看数据 / 编辑数据 / Raw 导入 / Dump 导入 / 新增 / 层级 ====================
+        // 4.1 查看数据：类型树浏览
+        private void BtnViewData_Click(object? sender, RoutedEventArgs e)
+        {
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+            if (item?.Container == null) { Log("请先选中资产"); return; }
+            dataView.Confirmed -= DataView_Confirmed;
+            dataView.Confirmed += DataView_Confirmed;
+            dataView.Initialize(_assetWorkspace, item.Container, _bundleInst, _workspace);
+            dataOverlay.IsVisible = true;
+        }
+
+        private void DataView_Confirmed(object? sender, bool e)
+        {
+            dataOverlay.IsVisible = false;
+        }
+
+        // 4.2 编辑数据：dump 文本 -> 编辑 -> 导入回资产
+        private void BtnEditData_Click(object? sender, RoutedEventArgs e)
+        {
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+            if (item?.Container == null || _assetWorkspace == null) { Log("请先选中资产"); return; }
             try
             {
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("=== Asset Info ===");
-                sb.AppendLine($"Name: {item.Name}");
-                sb.AppendLine($"SizeText: {item.SizeText}");
-
-                if (item.IsAsset && item.FileInstance != null && item.AssetInfo != null)
+                var cont = item.Container;
+                // 取得反序列化后的 baseField（必要时从 file 重新读取）
+                AssetContainer? resolved = cont.HasValueField
+                    ? cont
+                    : _assetWorkspace.GetAssetContainer(cont.FileInstance, 0, cont.PathId, false);
+                AssetTypeValueField? baseField = resolved?.BaseValueField ?? _assetWorkspace.GetBaseField(cont);
+                if (baseField == null)
                 {
-                    var fileInst = item.FileInstance;
-                    var inf = item.AssetInfo;
-                    sb.AppendLine($"Unity Version: {fileInst.file.Metadata.UnityVersion}");
-                    sb.AppendLine($"Target Platform: {fileInst.file.Metadata.TargetPlatform}");
-                    sb.AppendLine($"PathId: {inf.PathId}");
-                    sb.AppendLine($"TypeId: {inf.TypeId}");
-                    sb.AppendLine($"ByteSize: {inf.ByteSize}");
-
-                    var cldb = _am.ClassDatabase;
-                    var type = cldb.FindAssetClassByID(inf.TypeId);
-                    if (type != null)
-                    {
-                        sb.AppendLine($"TypeName: {cldb.GetString(type.Name)}");
-                    }
-                }
-                else if (item.DirInfo != null && _bundleInst != null)
-                {
-                    using var ms = GetItemStream(item);
-                    if (ms != null)
-                    {
-                        ms.Position = 0;
-                        var fileType = FileTypeDetector.DetectFileType(new AssetsFileReader(ms), 0);
-                        sb.AppendLine($"Detected Type: {fileType}");
-                        sb.AppendLine($"Offset: {item.DirInfo.Offset}");
-                        sb.AppendLine($"DecompressedSize: {item.DirInfo.DecompressedSize}");
-
-                        if (fileType == DetectedFileType.AssetsFile)
-                        {
-                            ms.Position = 0;
-                            string assetMemPath = Path.Combine(_bundleInst.path, item.Name);
-                            var subInst = _am.LoadAssetsFile(ms, assetMemPath, true);
-                            sb.AppendLine($"Unity Version: {subInst.file.Metadata.UnityVersion}");
-                            sb.AppendLine($"Target Platform: {subInst.file.Metadata.TargetPlatform}");
-                            sb.AppendLine($"Assets: {subInst.file.AssetInfos.Count}");
-                            sb.AppendLine();
-                            sb.AppendLine("=== Asset List ===");
-                            var subCldb = _am.ClassDatabase;
-                            foreach (var subInf in subInst.file.AssetInfos)
-                            {
-                                var subType = subCldb.FindAssetClassByID(subInf.TypeId);
-                                string subTypeName = subType != null ? subCldb.GetString(subType.Name) : $"0x{subInf.TypeId:X}";
-                                sb.AppendLine($"  [{subTypeName}] PathId={subInf.PathId} Size={subInf.ByteSize}");
-                            }
-                        }
-                    }
+                    Log("无法读取资产 base field（可能类型树缺失）");
+                    return;
                 }
 
-                Log(sb.ToString());
-                statusText.Text = $"Info: {item.Name}";
+                // dump 为文本
+                using var ms = new MemoryStream();
+                using (var sw = new StreamWriter(ms, leaveOpen: true))
+                {
+                    var impexp = new AssetImportExport();
+                    impexp.DumpTextAsset(sw, baseField);
+                    sw.Flush();
+                }
+                ms.Position = 0;
+                string dumpText = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+
+                _editDataTarget = cont;
+                editDataView.Confirmed -= EditDataView_Confirmed;
+                editDataView.Confirmed += EditDataView_Confirmed;
+                editDataView.Initialize(dumpText);
+                editDataOverlay.IsVisible = true;
+            }
+            catch (Exception ex) { Log("Dump 失败: " + ex.Message); }
+        }
+
+        private void EditDataView_Confirmed(object? sender, string? result)
+        {
+            editDataOverlay.IsVisible = false;
+            if (result == null || _editDataTarget == null || _assetWorkspace == null)
+            {
+                _editDataTarget = null;
+                return;
+            }
+            try
+            {
+                // 把编辑后的文本导入回资产
+                var impexp = new AssetImportExport();
+                byte[]? bytes;
+                using (var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(result)))
+                using (var sr = new StreamReader(ms))
+                {
+                    bytes = impexp.ImportTextAsset(sr, out string? exceptionMessage);
+                    if (bytes == null)
+                    {
+                        Log("应用编辑失败: " + (exceptionMessage ?? "未知错误"));
+                        return;
+                    }
+                }
+                AssetsReplacer replacer = AssetImportExport.CreateAssetReplacer(_editDataTarget, bytes);
+                _assetWorkspace.AddReplacer(_editDataTarget.FileInstance, replacer, new MemoryStream(bytes));
+                SetChanges(true);
+                Log("编辑已应用 (PathId=" + _editDataTarget.PathId + ")");
+            }
+            catch (Exception ex) { Log("应用编辑失败: " + ex.Message); }
+            finally { _editDataTarget = null; }
+        }
+
+        // 4.3 单项 Raw 导入：选择文件后写回
+        private void BtnImportRaw_Click(object? sender, RoutedEventArgs e)
+        {
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+            if (item?.Container == null) { Log("请先选中资产"); return; }
+            _pendingImportRawItem = item;
+            _pendingFileAction = PendingFileAction.ImportRawAsset;
+            ShowFileBrowser(FileBrowserView.BrowserMode.Open, new HashSet<string> { "dat", "" });
+        }
+
+        /// <summary>单项 Raw 导入：将选中的字节文件作为新内容写回资产（参考 DoBatchImportRaw）</summary>
+        private async Task DoImportRawAsset(AssetListItem? item, string path)
+        {
+            if (item?.Container == null || _assetWorkspace == null) { Log("Raw 导入：未选中资产"); return; }
+            try
+            {
+                var cont = item.Container;
+                byte[] bytes;
+                using (var fs = File.OpenRead(path))
+                {
+                    var importer = new AssetImportExport();
+                    bytes = importer.ImportRawAsset(fs);
+                }
+                AssetsReplacer replacer = AssetImportExport.CreateAssetReplacer(cont, bytes);
+                _assetWorkspace.AddReplacer(cont.FileInstance, replacer, new MemoryStream(bytes));
+                SetChanges(true);
+                Log($"Raw 导入成功: {Path.GetFileName(path)} (PathId={cont.PathId})");
+                statusText.Text = "Raw 导入成功: " + Path.GetFileName(path);
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {
-                Log("Info 异常: " + ex);
-                statusText.Text = "Info 失败: " + ex.Message;
+                Log("Raw 导入失败: " + ex.Message);
+                statusText.Text = "Raw 导入失败: " + ex.Message;
             }
+        }
+
+        // 4.4 Dump 批量导入：选目录后用 ImportDumpView 让用户确认匹配
+        private void BtnImportDump_Click(object? sender, RoutedEventArgs e)
+        {
+            var selection = assetList.SelectedItems.OfType<AssetListItem>()
+                .Where(i => i.Container != null)
+                .Select(i => i.Container!)
+                .ToList();
+            if (selection.Count == 0) { Log("请先选中资产"); return; }
+            _pendingDumpSelection = selection;
+            _pendingDumpFormat = ImportDumpView.DumpFormat.Text;
+            _pendingFileAction = PendingFileAction.ImportDumpDir;
+            ShowFileBrowser(FileBrowserView.BrowserMode.Directory);
+        }
+
+        private void ShowImportDumpView(string dir, List<AssetContainer> selection, ImportDumpView.DumpFormat format)
+        {
+            if (_assetWorkspace == null) { Log("未加载资产文件"); return; }
+            if (selection.Count == 0) { Log("无选中资产"); return; }
+            importDumpView.Confirmed -= ImportDumpView_Confirmed;
+            importDumpView.Confirmed += ImportDumpView_Confirmed;
+            importDumpView.Initialize(_assetWorkspace, selection, dir, format);
+            importDumpOverlay.IsVisible = true;
+        }
+
+        private async void ImportDumpView_Confirmed(object? sender, List<ImportDumpInfo>? result)
+        {
+            importDumpOverlay.IsVisible = false;
+            if (result == null || _assetWorkspace == null) { Log(result == null ? "已取消 Dump 导入" : "无导入项"); return; }
+            int ok = 0, fail = 0;
+            await Task.Run(() =>
+            {
+                foreach (var info in result)
+                {
+                    try
+                    {
+                        using var fs = File.OpenRead(info.importFile);
+                        using var sr = new StreamReader(fs);
+                        var importer = new AssetImportExport();
+                        byte[]? bytes;
+                        if (info.importFile.EndsWith(".json"))
+                        {
+                            AssetTypeTemplateField tempField = _assetWorkspace!.GetTemplateField(info.cont);
+                            bytes = importer.ImportJsonAsset(tempField, sr, out string? exceptionMessage);
+                            if (bytes == null)
+                                throw new Exception(exceptionMessage ?? "Json 解析失败");
+                        }
+                        else
+                        {
+                            bytes = importer.ImportTextAsset(sr, out string? exceptionMessage);
+                            if (bytes == null)
+                                throw new Exception(exceptionMessage ?? "Text 解析失败");
+                        }
+                        AssetsReplacer replacer = AssetImportExport.CreateAssetReplacer(info.cont, bytes);
+                        _assetWorkspace!.AddReplacer(info.cont.FileInstance, replacer, new MemoryStream(bytes));
+                        ok++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Dispatcher.UIThread.Post(() => Log($"导入 {info.assetName} 失败: {ex.Message}"));
+                        fail++;
+                    }
+                }
+            });
+            SetChanges(true);
+            Log($"Dump 导入完成: {ok} 成功, {fail} 失败");
+            statusText.Text = $"Dump 导入完成: 成功 {ok}, 失败 {fail}";
+            if (_standaloneAssetsInst != null) RefreshAssetListFromAssetsFile(_standaloneAssetsInst);
+        }
+
+        // 4.5 新增资产：用 AssetsReplacerFromMemory 创建空资产
+        private void BtnAddAsset_Click(object? sender, RoutedEventArgs e)
+        {
+            if (_assetWorkspace == null) { Log("未加载资产文件"); return; }
+            addAssetView.Reset();
+            addAssetView.Initialize(_assetWorkspace);
+            addAssetView.Confirmed -= AddAssetView_Confirmed;
+            addAssetView.Confirmed += AddAssetView_Confirmed;
+            addAssetOverlay.IsVisible = true;
+        }
+
+        private void AddAssetView_Confirmed(object? sender, AddAssetView.AddAssetInfo? info)
+        {
+            addAssetOverlay.IsVisible = false;
+            if (info == null) return; // 用户取消
+            if (_assetWorkspace == null || _standaloneAssetsInst == null)
+            {
+                Log("新增失败：未加载独立 .assets 文件");
+                return;
+            }
+            try
+            {
+                long pathId = info.PathId;
+                if (pathId == -1)
+                    pathId = GetNextPathId(_standaloneAssetsInst);
+
+                int typeId = info.ClassId;
+                ushort monoId = info.MonoScriptId == 0 ? (ushort)0xffff : (ushort)info.MonoScriptId;
+
+                // 简化实现：创建空字节数组资产（参考 AddAssetWindow 未勾选"创建空资产"时的行为）
+                // 不读 typetree/cldb 构造默认值，避免依赖复杂的模板字段构造流程。
+                byte[] assetBytes = new byte[0];
+                var replacer = new AssetsReplacerFromMemory(pathId, typeId, monoId, assetBytes);
+                _assetWorkspace.AddReplacer(_standaloneAssetsInst, replacer, new MemoryStream(assetBytes));
+
+                SetChanges(true);
+                RefreshAssetListFromAssetsFile(_standaloneAssetsInst);
+                Log($"新增资产成功: ClassId={typeId}, PathId={pathId}, MonoId={monoId}");
+                statusText.Text = $"已新增资产 PathId={pathId}";
+            }
+            catch (Exception ex)
+            {
+                Log("新增失败: " + ex.Message);
+                statusText.Text = "新增失败: " + ex.Message;
+            }
+        }
+
+        /// <summary>获取当前文件中可用的下一个 PathId（max + 1，避开新增资产占用的 id）</summary>
+        private long GetNextPathId(AssetsFileInstance fileInst)
+        {
+            long max = 0;
+            foreach (var inf in fileInst.file.AssetInfos)
+                if (inf.PathId > max) max = inf.PathId;
+            if (_assetWorkspace != null)
+            {
+                foreach (var kv in _assetWorkspace.NewAssets)
+                    if (kv.Key.pathID > max) max = kv.Key.pathID;
+                foreach (var kv in _assetWorkspace.LoadedAssets)
+                    if (kv.Value != null && kv.Value.PathId > max) max = kv.Value.PathId;
+            }
+            return max + 1;
+        }
+
+        // 4.6 场景层级
+        private void BtnHierarchy_Click(object? sender, RoutedEventArgs e)
+        {
+            AssetsFileInstance? fileInst = _standaloneAssetsInst;
+            if (fileInst == null)
+            {
+                // bundle 或独立模式：若有选中项取其 FileInstance
+                var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+                if (item?.Container != null)
+                    fileInst = item.Container.FileInstance;
+                else if (item?.FileInstance != null)
+                    fileInst = item.FileInstance;
+            }
+            if (fileInst == null) { Log("请先打开 .assets 文件"); return; }
+            hierarchyView.Confirmed -= HierarchyView_Confirmed;
+            hierarchyView.Confirmed += HierarchyView_Confirmed;
+            hierarchyView.Initialize(fileInst, _assetWorkspace);
+            hierarchyOverlay.IsVisible = true;
+        }
+
+        private void HierarchyView_Confirmed(object? sender, bool e)
+        {
+            hierarchyOverlay.IsVisible = false;
         }
 
         // ==================== Dump ====================

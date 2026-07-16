@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="UABEA.Android.AddAssetView">
+    <Border Background="#80000000"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="#222" CornerRadius="8" Padding="16"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MinWidth="340" MaxWidth="520">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Text="新增资产" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,12"/>
+
+                <!-- PathId -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                    <TextBlock Text="PathID:" FontSize="14" VerticalAlignment="Center" Foreground="White" MinWidth="100"/>
+                    <TextBox Name="boxPathId" Watermark="留空自动分配" FontSize="14" MinWidth="240"/>
+                </StackPanel>
+
+                <!-- ClassId + 常用类型 -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                    <TextBlock Text="ClassID:" FontSize="14" VerticalAlignment="Center" Foreground="White" MinWidth="100"/>
+                    <TextBox Name="boxClassId" Watermark="如 28=Texture2D" FontSize="14" MinWidth="120"/>
+                    <ComboBox Name="cbCommonTypes" MinWidth="170" PlaceholderText="常用类型"/>
+                </StackPanel>
+
+                <!-- MonoScriptId -->
+                <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                    <TextBlock Text="MonoScriptID:" FontSize="14" VerticalAlignment="Center" Foreground="White" MinWidth="100"/>
+                    <TextBox Name="boxMonoId" Watermark="0=非 Mono" FontSize="14" MinWidth="240" Text="0"/>
+                </StackPanel>
+
+                <!-- UseTypeTree -->
+                <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                    <TextBlock Text="UseTypeTree:" FontSize="14" VerticalAlignment="Center" Foreground="White" MinWidth="100"/>
+                    <CheckBox Name="chkUseTypeTree" IsChecked="False" Foreground="White"/>
+                </StackPanel>
+
+                <!-- error -->
+                <TextBlock Grid.Row="5" Name="errorText" FontSize="11" Foreground="#ff6666" Margin="0,0,0,8" IsVisible="False" TextWrapping="Wrap"/>
+
+                <!-- buttons -->
+                <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Name="btnConfirm" Content="确认" Height="40" MinWidth="90"/>
+                    <Button Name="btnCancel" Content="取消" Height="40" MinWidth="70"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

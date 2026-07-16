@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using System;
+using System.ComponentModel;
 using UABEAvalonia;
 
 namespace UABEA.Android
@@ -12,7 +13,19 @@ namespace UABEA.Android
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
-            Current.RequestedThemeVariant = ThemeVariant.Light;
+            // P3-A 适配 Android：启动时按配置应用主题（不再硬编码 Light）
+            ThemeHandler.ApplyConfigurationTheme(ConfigurationManager.Settings.ThemeType);
+
+            // 订阅 ThemeType 变更：用户在 Settings 面板切换主题后立即生效
+            ConfigurationManager.Settings.PropertyChanged += OnSettingsPropertyChanged;
+        }
+
+        private static void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ConfigurationValues.ThemeType))
+            {
+                ThemeHandler.ApplyConfigurationTheme(ConfigurationManager.Settings.ThemeType);
+            }
         }
 
         public override void OnFrameworkInitializationCompleted()

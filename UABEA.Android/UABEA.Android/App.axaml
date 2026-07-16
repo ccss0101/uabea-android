@@ -1,7 +1,21 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="UABEA.Android.App">
-    <Application.Styles>
-        <SimpleTheme/>
-    </Application.Styles>
+  <Application.Resources>
+    <!--
+      P3-A 适配 Android：注册主题资源字典，让 Avalonia 在 RequestedThemeVariant
+      变化时自动切换 SimpleLight/SimpleDark。Android 单视图模式下也可享受主题。
+      资源来自共享 UABEAvalonia/Themes/Accents/（UABEA.Android.csproj 已链接 axaml）。
+    -->
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceInclude Source="/UABEAvalonia/Themes/Accents/SimpleLight.axaml" x:Key="Light" />
+        <ResourceInclude Source="/UABEAvalonia/Themes/Accents/SimpleDark.axaml" x:Key="Dark" />
+        <ResourceInclude Source="/UABEAvalonia/Themes/Accents/SimpleLight.axaml" x:Key="Default" />
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <SimpleTheme/>
+  </Application.Styles>
 </Application>

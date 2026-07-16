@@ -75,6 +75,15 @@ namespace UABEA.Android
             btnSaveText.Click += BtnSaveText_Click;
             btnClosePreview.Click += (s, e) => { previewOverlay.IsVisible = false; };
 
+            btnSettings.Click += BtnSettings_Click;
+            btnSettingsClose.Click += (s, e) =>
+            {
+                settingsOverlay.IsVisible = false;
+                // 关闭时立即保存，避免 500ms 防抖丢失最后一项变更
+                ConfigurationManager.SaveConfig();
+                Log("设置已保存");
+            };
+
             renameOk.Click += RenameOk_Click;
             renameCancel.Click += RenameCancel_Click;
 
@@ -85,6 +94,23 @@ namespace UABEA.Android
             compLz4.Click += (s, e) => DoCompress(AssetBundleCompressionType.LZ4);
             compLzma.Click += (s, e) => DoCompress(AssetBundleCompressionType.LZMA);
             compCancel.Click += (s, e) => { compressOverlay.IsVisible = false; };
+        }
+
+        // ==================== 设置面板 ====================
+        // P2-C/P3-A 适配 Android：复用 ConfigurationManager + ConfigurationItem 反射系统，
+        // 通过 overlay 而非 Window 展示（Android 单视图模式）。
+        private void BtnSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var items = ConfigurationManager.GetConfigurationItems();
+                settingsItems.ItemsSource = items;
+                settingsOverlay.IsVisible = true;
+            }
+            catch (Exception ex)
+            {
+                Log("打开设置异常: " + ex);
+            }
         }
 
         private void MainView_Loaded(object? sender, RoutedEventArgs e)

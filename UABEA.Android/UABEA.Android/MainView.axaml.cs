@@ -6,7 +6,6 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -31,6 +30,8 @@ namespace UABEA.Android
         private BundleWorkspace? _workspace;
         private AssetsFileInstance? _standaloneAssetsInst;
         private ObservableCollection<AssetListItem> _items = new ObservableCollection<AssetListItem>();
+        // 完整未过滤列表（搜索时据此过滤 _items）
+        private List<AssetListItem> _allItems = new List<AssetListItem>();
 
         // 修改状态跟踪
         private bool _changesUnsaved;
@@ -41,6 +42,13 @@ namespace UABEA.Android
         private string? _importTempPath;       // 导入文件复制到缓存的路径
         private string? _importOrigName;       // 要替换的原文件名（如果有）
 
+        // 内置文件选择器的挂起操作（区分打开/导入/导出/保存等）
+        private PendingFileAction _pendingFileAction = PendingFileAction.Open;
+        private AssetListItem? _pendingExportItem;       // 单项导出时的目标项
+        private AssetBundleCompressionType _pendingCompType; // 压缩保存时的目标类型
+        private AssetListItem? _pendingDumpItem;         // Dump 保存时的目标项
+        private string? _pendingTextContent;             // 保存文本时的内容
+
         // 预览/替换相关
         private AssetsFileInstance? _previewFileInst;
         private AssetFileInfo? _previewAssetInf;
@@ -49,6 +57,20 @@ namespace UABEA.Android
         private TextureFormat _previewTexFormat;
         private int _previewTexWidth;
         private int _previewTexHeight;
+
+        /// <summary>内置文件选择器的挂起操作类型</summary>
+        private enum PendingFileAction
+        {
+            Open,        // 打开 bundle/assets 文件
+            Import,      // 导入替换文件
+            ExportItem,  // 导出单项
+            ExportAll,   // 批量导出到目录
+            SaveBundle,  // 保存 bundle
+            CompressSave,// 压缩保存
+            DumpSave,    // Dump 保存到文件
+            ReplaceTextureOpen, // 选择替换贴图源文件
+            SaveTextFile // 保存文本到文件
+        }
 
         public MainView()
         {
@@ -94,6 +116,9 @@ namespace UABEA.Android
             compLz4.Click += (s, e) => DoCompress(AssetBundleCompressionType.LZ4);
             compLzma.Click += (s, e) => DoCompress(AssetBundleCompressionType.LZMA);
             compCancel.Click += (s, e) => { compressOverlay.IsVisible = false; };
+
+            // 搜索框：输入时实时过滤资产列表
+            searchBox.TextChanged += (s, e) => ApplySearchFilter();
         }
 
         // ==================== 设置面板 ====================
@@ -179,21 +204,32 @@ namespace UABEA.Android
                     Log("有未保存的修改，继续打开将丢弃");
                 }
 
-                // 显示内置文件浏览器 overlay
-                fileBrowser.Initialize(
-                    startDir: null,
+                _pendingFileAction = PendingFileAction.Open;
+                ShowFileBrowser(
+                    mode: FileBrowserView.BrowserMode.Open,
                     extensions: new HashSet<string> { "bundle", "assets", "dat", "unity3d", "ab", "" });
-                fileBrowser.FileSelected -= FileBrowser_FileSelected;
-                fileBrowser.Cancelled -= FileBrowser_Cancelled;
-                fileBrowser.FileSelected += FileBrowser_FileSelected;
-                fileBrowser.Cancelled += FileBrowser_Cancelled;
-                fileBrowserOverlay.IsVisible = true;
             }
             catch (Exception ex)
             {
                 Log("打开文件选择器异常: " + ex);
                 statusText.Text = "打开失败: " + ex.Message;
             }
+        }
+
+        /// <summary>显示内置文件浏览器 overlay 并绑定回调</summary>
+        private void ShowFileBrowser(FileBrowserView.BrowserMode mode,
+            HashSet<string>? extensions = null, string? suggestedName = null, string? startDir = null)
+        {
+            fileBrowser.Initialize(
+                startDir: startDir,
+                extensions: extensions,
+                mode: mode,
+                suggestedFileName: suggestedName);
+            fileBrowser.FileSelected -= FileBrowser_FileSelected;
+            fileBrowser.Cancelled -= FileBrowser_Cancelled;
+            fileBrowser.FileSelected += FileBrowser_FileSelected;
+            fileBrowser.Cancelled += FileBrowser_Cancelled;
+            fileBrowserOverlay.IsVisible = true;
         }
 
         private async void FileBrowser_FileSelected(object? sender, string? path)
@@ -203,49 +239,60 @@ namespace UABEA.Android
                 fileBrowserOverlay.IsVisible = false;
                 if (string.IsNullOrEmpty(path))
                 {
-                    Log("未选择文件");
+                    Log("未选择路径");
                     return;
                 }
-                Log($"打开文件: {path}");
-                await OpenFile(path);
+
+                switch (_pendingFileAction)
+                {
+                    case PendingFileAction.Open:
+                        Log($"打开文件: {path}");
+                        await OpenFile(path);
+                        break;
+                    case PendingFileAction.Import:
+                        Log($"导入选择: {path}");
+                        await OnImportFileSelected(path);
+                        break;
+                    case PendingFileAction.ExportItem:
+                        Log($"导出到: {path}");
+                        await DoExportToPath(_pendingExportItem, path);
+                        break;
+                    case PendingFileAction.ExportAll:
+                        Log($"批量导出到目录: {path}");
+                        await DoExportAllToDir(path);
+                        break;
+                    case PendingFileAction.SaveBundle:
+                        Log($"保存到: {path}");
+                        await DoSaveBundleToPath(path);
+                        break;
+                    case PendingFileAction.CompressSave:
+                        Log($"压缩保存到: {path}");
+                        await DoCompressSaveToPath(path, _pendingCompType);
+                        break;
+                    case PendingFileAction.DumpSave:
+                        Log($"Dump 保存到: {path}");
+                        await DoDumpToPath(_pendingDumpItem, path);
+                        break;
+                    case PendingFileAction.ReplaceTextureOpen:
+                        Log($"替换贴图源: {path}");
+                        await DoReplaceTextureFromPath(path);
+                        break;
+                    case PendingFileAction.SaveTextFile:
+                        Log($"保存文本到: {path}");
+                        await DoSaveTextToPath(path);
+                        break;
+                }
             }
             catch (Exception ex)
             {
-                Log("打开文件异常: " + ex);
-                statusText.Text = "打开失败: " + ex.Message;
+                Log("文件操作异常: " + ex);
+                statusText.Text = "操作失败: " + ex.Message;
             }
         }
 
         private void FileBrowser_Cancelled(object? sender, EventArgs e)
         {
             fileBrowserOverlay.IsVisible = false;
-        }
-
-        /// <summary>把 IStorageFile 的内容复制到缓存目录，返回临时文件路径。解决 Android content:// URI 无法直接访问的问题。</summary>
-        private async Task<string?> CopyStorageFileToCache(IStorageFile storageFile)
-        {
-            try
-            {
-                var cacheDir = AppPaths.GetCacheDir();
-                Directory.CreateDirectory(cacheDir);
-                var name = storageFile.Name;
-                if (string.IsNullOrEmpty(name)) name = "uabea_input";
-                foreach (var c in Path.GetInvalidFileNameChars())
-                    name = name.Replace(c, '_');
-                var tempPath = Path.Combine(cacheDir, $"{DateTime.Now:yyyyMMdd_HHmmss}_{name}");
-
-                await using var src = await storageFile.OpenReadAsync();
-                using var dst = File.Create(tempPath);
-                await src.CopyToAsync(dst);
-
-                Log($"已复制到缓存: {tempPath} ({new FileInfo(tempPath).Length} bytes)");
-                return tempPath;
-            }
-            catch (Exception ex)
-            {
-                Log("CopyStorageFileToCache 异常: " + ex);
-                return null;
-            }
         }
 
         private async Task OpenFile(string path)
@@ -296,22 +343,27 @@ namespace UABEA.Android
         private void RefreshAssetListFromBundle()
         {
             _items.Clear();
+            _allItems.Clear();
             if (_bundleInst == null) return;
 
             foreach (var dirInf in _bundleInst.file.BlockAndDirInfo.DirectoryInfos)
             {
-                _items.Add(new AssetListItem
+                var item = new AssetListItem
                 {
                     Name = dirInf.Name,
                     SizeText = $"Size: {dirInf.DecompressedSize} bytes",
                     DirInfo = dirInf
-                });
+                };
+                _items.Add(item);
+                _allItems.Add(item);
             }
+            ApplySearchFilter();
         }
 
         private void RefreshAssetListFromAssetsFile(AssetsFileInstance fileInst)
         {
             _items.Clear();
+            _allItems.Clear();
             var cldb = _am.ClassDatabase;
             foreach (var inf in fileInst.file.AssetInfos)
             {
@@ -336,6 +388,33 @@ namespace UABEA.Android
                     AssetInfo = inf,
                     FileInstance = fileInst
                 });
+            }
+            // 同步 _allItems
+            _allItems.Clear();
+            foreach (var i in _items) _allItems.Add(i);
+            ApplySearchFilter();
+        }
+
+        /// <summary>根据搜索框文本过滤资产列表</summary>
+        private void ApplySearchFilter()
+        {
+            var keyword = searchBox?.Text?.Trim() ?? "";
+            if (string.IsNullOrEmpty(keyword))
+            {
+                // 无关键字：显示全部
+                if (_items.Count != _allItems.Count)
+                {
+                    _items.Clear();
+                    foreach (var i in _allItems) _items.Add(i);
+                }
+                return;
+            }
+
+            _items.Clear();
+            foreach (var item in _allItems)
+            {
+                if (item.Name != null && item.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                    _items.Add(item);
             }
         }
 
@@ -363,33 +442,35 @@ namespace UABEA.Android
         }
 
         // ==================== 导出 ====================
-        private async void BtnExport_Click(object? sender, RoutedEventArgs e)
+        // 使用内置文件选择器（Save 模式）选择导出目标，避免系统选择器导致掉后台
+        private void BtnExport_Click(object? sender, RoutedEventArgs e)
         {
             var item = assetList.SelectedItem as AssetListItem;
             if (item == null) return;
 
+            _pendingFileAction = PendingFileAction.ExportItem;
+            _pendingExportItem = item;
+            ShowFileBrowser(
+                mode: FileBrowserView.BrowserMode.Save,
+                suggestedName: Path.GetFileName(item.Name));
+        }
+
+        /// <summary>实际执行单项导出到指定路径</summary>
+        private async Task DoExportToPath(AssetListItem? item, string outPath)
+        {
+            if (item == null) { Log("导出项为空"); return; }
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-                {
-                    Title = "导出为...",
-                    SuggestedFileName = Path.GetFileName(item.Name)
-                });
-
-                if (file == null) return;
-
                 using var ms = GetItemStream(item);
                 if (ms == null) { Log("无法读取数据"); return; }
                 ms.Position = 0;
 
-                await using var fs = await file.OpenWriteAsync();
+                Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+                using var fs = File.Open(outPath, FileMode.Create);
                 await ms.CopyToAsync(fs);
 
-                Log($"已导出: {file.Name}");
-                statusText.Text = "导出成功: " + file.Name;
+                Log($"已导出: {outPath}");
+                statusText.Text = "导出成功: " + Path.GetFileName(outPath);
             }
             catch (Exception ex)
             {
@@ -398,30 +479,21 @@ namespace UABEA.Android
             }
         }
 
-        private async void BtnExportAll_Click(object? sender, RoutedEventArgs e)
+        // 批量导出：使用内置文件选择器（Directory 模式）选择目标目录
+        private void BtnExportAll_Click(object? sender, RoutedEventArgs e)
         {
             if (_bundleInst == null) return;
+            _pendingFileAction = PendingFileAction.ExportAll;
+            ShowFileBrowser(mode: FileBrowserView.BrowserMode.Directory);
+        }
 
+        /// <summary>实际执行批量导出到指定目录</summary>
+        private async Task DoExportAllToDir(string dir)
+        {
+            if (_bundleInst == null) return;
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-                {
-                    Title = "选择导出目录"
-                });
-
-                if (folders == null || folders.Count == 0) return;
-
-                var dir = folders[0].TryGetLocalPath();
-                if (string.IsNullOrEmpty(dir))
-                {
-                    Log("导出目录路径为 null（Android 安全存储限制），改用缓存目录");
-                    dir = Path.Combine(AppPaths.GetCacheDir(), "uabea_export");
-                    Directory.CreateDirectory(dir);
-                }
-
+                Directory.CreateDirectory(dir);
                 int count = 0;
                 foreach (var dirInf in _bundleInst.file.BlockAndDirInfo.DirectoryInfos)
                 {
@@ -446,47 +518,34 @@ namespace UABEA.Android
         }
 
         // ==================== 导入（插件替换） ====================
-        private async void BtnImport_Click(object? sender, RoutedEventArgs e)
+        // 使用内置文件选择器（Open 模式）选择导入源文件，避免系统选择器导致掉后台
+        private void BtnImport_Click(object? sender, RoutedEventArgs e)
         {
             var item = assetList.SelectedItem as AssetListItem;
             if (item == null || _workspace == null) return;
 
+            _pendingFileAction = PendingFileAction.Import;
+            _importOrigName = item.Name; // 记录要替换的目标项
+            ShowFileBrowser(mode: FileBrowserView.BrowserMode.Open);
+        }
+
+        /// <summary>导入文件选择后的回调：显示导入类型确认 overlay</summary>
+        private Task OnImportFileSelected(string path)
+        {
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
-                {
-                    Title = "选择要导入的文件",
-                    FileTypeFilter = new List<FilePickerFileType>
-                    {
-                        new FilePickerFileType("All files") { Patterns = new List<string> { "*" } }
-                    }
-                });
-
-                if (files == null || files.Count == 0) return;
-
-                var storageFile = files[0];
-                string? path = storageFile.TryGetLocalPath();
-                if (string.IsNullOrEmpty(path))
-                {
-                    Log("导入文件复制到缓存...");
-                    path = await CopyStorageFileToCache(storageFile);
-                }
-                if (string.IsNullOrEmpty(path)) { Log("无法获取导入文件路径"); return; }
-
+                if (string.IsNullOrEmpty(path)) { Log("未选择文件"); return Task.CompletedTask; }
                 _importTempPath = path;
-                _importOrigName = item.Name; // 替换当前选中项
-                importFileName.Text = $"替换: {item.Name}\n导入: {storageFile.Name}";
+                importFileName.Text = $"替换: {_importOrigName}\n导入: {Path.GetFileName(path)}";
                 importOverlay.IsVisible = true;
             }
             catch (Exception ex)
             {
-                Log("导入异常: " + ex);
+                Log("导入选择异常: " + ex);
                 statusText.Text = "导入失败: " + ex.Message;
                 CleanupImport();
             }
+            return Task.CompletedTask;
         }
 
         /// <summary>执行导入：用新文件替换 bundle 内的文件</summary>
@@ -649,23 +708,25 @@ namespace UABEA.Android
         }
 
         // ==================== Dump ====================
-        private async void BtnDump_Click(object? sender, RoutedEventArgs e)
+        // 使用内置文件选择器（Save 模式）选择 Dump 输出路径
+        private void BtnDump_Click(object? sender, RoutedEventArgs e)
         {
             var item = assetList.SelectedItem as AssetListItem;
             if (item == null) return;
 
+            _pendingFileAction = PendingFileAction.DumpSave;
+            _pendingDumpItem = item;
+            ShowFileBrowser(
+                mode: FileBrowserView.BrowserMode.Save,
+                suggestedName: Path.GetFileNameWithoutExtension(item.Name) + "_dump.txt");
+        }
+
+        /// <summary>实际执行 Dump 到指定路径</summary>
+        private async Task DoDumpToPath(AssetListItem? item, string outPath)
+        {
+            if (item == null) { Log("Dump 项为空"); return; }
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-                {
-                    Title = "Dump 到...",
-                    SuggestedFileName = Path.GetFileNameWithoutExtension(item.Name) + "_dump.txt"
-                });
-                if (file == null) return;
-
                 var sb = new System.Text.StringBuilder();
                 sb.AppendLine("# UABEA Dump");
                 sb.AppendLine($"# File: {item.Name}");
@@ -736,13 +797,10 @@ namespace UABEA.Android
                         sb.AppendLine($"文件大小: {item.DirInfo.DecompressedSize} bytes");
                 }
 
-                await using (var fs = await file.OpenWriteAsync())
-                {
-                    var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
-                    await fs.WriteAsync(bytes, 0, bytes.Length);
-                }
-                Log($"Dump 完成: {file.Name}");
-                statusText.Text = "Dump 成功: " + file.Name;
+                Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+                await File.WriteAllTextAsync(outPath, sb.ToString());
+                Log($"Dump 完成: {outPath}");
+                statusText.Text = "Dump 成功: " + Path.GetFileName(outPath);
             }
             catch (Exception ex)
             {
@@ -800,48 +858,32 @@ namespace UABEA.Android
         }
 
         // ==================== 保存 ====================
-        private async void BtnSave_Click(object? sender, RoutedEventArgs e)
+        // 使用内置文件选择器（Save 模式）选择保存目标，避免系统选择器导致掉后台
+        private void BtnSave_Click(object? sender, RoutedEventArgs e)
         {
             if (_bundleInst == null || _workspace == null || !_changesUnsaved) return;
 
+            _pendingFileAction = PendingFileAction.SaveBundle;
+            ShowFileBrowser(
+                mode: FileBrowserView.BrowserMode.Save,
+                suggestedName: Path.GetFileName(_bundleInst.path));
+        }
+
+        /// <summary>实际执行保存 Bundle 到指定路径</summary>
+        private async Task DoSaveBundleToPath(string path)
+        {
+            if (_bundleInst == null || _workspace == null) return;
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                // 用 SaveFilePicker 选择保存位置（SaveAs 模式，避免覆盖原文件导致流冲突）
-                var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-                {
-                    Title = "保存 Bundle 为...",
-                    SuggestedFileName = Path.GetFileName(_bundleInst.path)
-                });
-
-                if (file == null) return;
-
                 ShowProgress("保存中...");
-
-                string? path = file.TryGetLocalPath();
-                if (string.IsNullOrEmpty(path))
-                {
-                    // Android: 先写到缓存，再复制到 StorageProvider 流
-                    path = Path.Combine(AppPaths.GetCacheDir(), $"save_{DateTime.Now:HHmmss}_{file.Name}");
-                    SaveBundleToPath(path);
-                    await using var dst = await file.OpenWriteAsync();
-                    using var src = File.OpenRead(path);
-                    await src.CopyToAsync(dst);
-                    try { File.Delete(path); } catch { }
-                }
-                else
-                {
-                    SaveBundleToPath(path);
-                }
+                await Task.Run(() => SaveBundleToPath(path));
 
                 _changesUnsaved = false;
                 UpdateStatusText();
                 btnSave.IsEnabled = false;
                 HideProgress();
-                Log($"保存成功: {file.Name}");
-                statusText.Text = "保存成功: " + file.Name;
+                Log($"保存成功: {path}");
+                statusText.Text = "保存成功: " + Path.GetFileName(path);
             }
             catch (Exception ex)
             {
@@ -870,33 +912,26 @@ namespace UABEA.Android
             compressOverlay.IsVisible = true;
         }
 
-        private async void DoCompress(AssetBundleCompressionType compType)
+        // 用户选择压缩方式后，弹出内置文件选择器选择保存目标
+        private void DoCompress(AssetBundleCompressionType compType)
         {
             compressOverlay.IsVisible = false;
             if (_bundleInst == null) return;
 
+            _pendingFileAction = PendingFileAction.CompressSave;
+            _pendingCompType = compType;
+            ShowFileBrowser(
+                mode: FileBrowserView.BrowserMode.Save,
+                suggestedName: Path.GetFileNameWithoutExtension(_bundleInst.name) + "_compressed");
+        }
+
+        /// <summary>实际执行压缩保存到指定路径</summary>
+        private async Task DoCompressSaveToPath(string path, AssetBundleCompressionType compType)
+        {
+            if (_bundleInst == null) return;
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-                {
-                    Title = "压缩保存为...",
-                    SuggestedFileName = Path.GetFileNameWithoutExtension(_bundleInst.name) + "_compressed"
-                });
-                if (file == null) return;
-
                 ShowProgress($"压缩中 ({compType})...");
-
-                // 压缩在后台线程执行
-                string? path = file.TryGetLocalPath();
-                bool usedCache = false;
-                if (string.IsNullOrEmpty(path))
-                {
-                    path = Path.Combine(AppPaths.GetCacheDir(), $"comp_{DateTime.Now:HHmmss}_{file.Name}");
-                    usedCache = true;
-                }
 
                 string finalPath = path;
                 string bundlePath = _bundleInst.path;
@@ -910,17 +945,9 @@ namespace UABEA.Android
                     bundleFile.Pack(bundleReader, w, compType, true, null);
                 });
 
-                if (usedCache)
-                {
-                    await using var dst = await file.OpenWriteAsync();
-                    using var src = File.OpenRead(finalPath);
-                    await src.CopyToAsync(dst);
-                    try { File.Delete(finalPath); } catch { }
-                }
-
                 HideProgress();
-                Log($"压缩完成 ({compType}): {file.Name}");
-                statusText.Text = $"压缩成功: {file.Name}";
+                Log($"压缩完成 ({compType}): {path}");
+                statusText.Text = $"压缩成功: {Path.GetFileName(path)}";
             }
             catch (Exception ex)
             {
@@ -1223,35 +1250,25 @@ namespace UABEA.Android
         }
 
         // ==================== 替换贴图 ====================
-        private async void BtnReplaceTexture_Click(object? sender, RoutedEventArgs e)
+        // 使用内置文件选择器（Open 模式）选择替换图片，避免系统选择器导致掉后台
+        private void BtnReplaceTexture_Click(object? sender, RoutedEventArgs e)
         {
             if (_previewFileInst == null || _previewAssetInf == null) return;
 
+            _pendingFileAction = PendingFileAction.ReplaceTextureOpen;
+            ShowFileBrowser(
+                mode: FileBrowserView.BrowserMode.Open,
+                extensions: new HashSet<string> { "png", "jpg", "jpeg", "bmp", "tga", "" });
+        }
+
+        /// <summary>选择替换图片后的处理：编码并替换</summary>
+        private async Task DoReplaceTextureFromPath(string imagePath)
+        {
+            if (_previewFileInst == null || _previewAssetInf == null) return;
+            if (string.IsNullOrEmpty(imagePath)) { Log("未选择图片"); return; }
+
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel == null) return;
-
-                var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
-                {
-                    Title = "选择替换图片 (PNG/JPG)",
-                    FileTypeFilter = new List<FilePickerFileType>
-                    {
-                        new FilePickerFileType("图片") { Patterns = new List<string> { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tga" } },
-                        new FilePickerFileType("All files") { Patterns = new List<string> { "*" } }
-                    }
-                });
-
-                if (files == null || files.Count == 0) return;
-
-                var storageFile = files[0];
-                string? path = storageFile.TryGetLocalPath();
-                if (string.IsNullOrEmpty(path))
-                {
-                    path = await CopyStorageFileToCache(storageFile);
-                }
-                if (string.IsNullOrEmpty(path)) { Log("无法获取图片路径"); return; }
-
                 ShowProgress("编码贴图...");
 
                 bool success = false;
@@ -1263,7 +1280,7 @@ namespace UABEA.Android
                     try
                     {
                         // 加载图片
-                        using var image = Image.Load<Rgba32>(path);
+                        using var image = Image.Load<Rgba32>(imagePath);
                         int imgWidth = image.Width;
                         int imgHeight = image.Height;
 
@@ -1355,27 +1372,14 @@ namespace UABEA.Android
                     }
                     else
                     {
-                        // 独立 .assets：保存到文件
-                        var tl = TopLevel.GetTopLevel(this);
-                        if (tl != null)
-                        {
-                            var file = await tl.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-                            {
-                                Title = "保存 .assets 为...",
-                                SuggestedFileName = Path.GetFileName(_previewFileInst!.path)
-                            });
-                            if (file != null)
-                            {
-                                string? savePath = file.TryGetLocalPath();
-                                if (string.IsNullOrEmpty(savePath))
-                                {
-                                    savePath = Path.Combine(AppPaths.GetCacheDir(), $"save_{DateTime.Now:HHmmss}_{file.Name}");
-                                }
-                                File.WriteAllBytes(savePath, savedAssetsData);
-                                Log($"贴图已保存: {file.Name}");
-                                statusText.Text = "贴图保存成功: " + file.Name;
-                            }
-                        }
+                        // 独立 .assets：保存到原文件同目录（避免再次弹出选择器）
+                        string dir = Path.GetDirectoryName(_previewFileInst!.path) ?? AppPaths.GetCacheDir();
+                        string baseName = Path.GetFileNameWithoutExtension(_previewFileInst.path);
+                        string ext = Path.GetExtension(_previewFileInst.path);
+                        string savePath = Path.Combine(dir, $"{baseName}_modified{ext}");
+                        File.WriteAllBytes(savePath, savedAssetsData);
+                        Log($"贴图已保存: {savePath}");
+                        statusText.Text = "贴图保存成功: " + Path.GetFileName(savePath);
                     }
                     previewOverlay.IsVisible = false;
                     Log($"贴图替换成功: {_previewTexFormat} {_previewTexWidth}x{_previewTexHeight}");
@@ -1395,6 +1399,7 @@ namespace UABEA.Android
         }
 
         // ==================== 保存文本 ====================
+        // Bundle 模式直接替换工作区；独立 .assets 保存到原文件同目录（避免系统选择器掉后台）
         private async void BtnSaveText_Click(object? sender, RoutedEventArgs e)
         {
             if (_previewFileInst == null || _previewAssetInf == null) return;
@@ -1427,31 +1432,20 @@ namespace UABEA.Android
                 }
                 else
                 {
-                    // 独立 .assets：保存到文件
-                    var topLevel = TopLevel.GetTopLevel(this);
-                    if (topLevel == null) return;
+                    // 独立 .assets：保存到原文件同目录（避免系统选择器掉后台）
+                    string dir = Path.GetDirectoryName(_previewFileInst.path) ?? AppPaths.GetCacheDir();
+                    string baseName = Path.GetFileNameWithoutExtension(_previewFileInst.path);
+                    string ext = Path.GetExtension(_previewFileInst.path);
+                    string savePath = Path.Combine(dir, $"{baseName}_modified{ext}");
 
-                    var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-                    {
-                        Title = "保存 .assets 为...",
-                        SuggestedFileName = Path.GetFileName(_previewFileInst.path)
-                    });
-                    if (file == null) return;
-
-                    string? path = file.TryGetLocalPath();
-                    if (string.IsNullOrEmpty(path))
-                    {
-                        path = Path.Combine(AppPaths.GetCacheDir(), $"save_{DateTime.Now:HHmmss}_{file.Name}");
-                    }
-
-                    using (var fs = File.Open(path, FileMode.Create))
+                    using (var fs = File.Open(savePath, FileMode.Create))
                     using (var w = new AssetsFileWriter(fs))
                     {
                         _previewFileInst.file.Write(w, 0, replacers);
                     }
 
-                    Log($"文本已保存: {file.Name}");
-                    statusText.Text = "文本保存成功: " + file.Name;
+                    Log($"文本已保存: {savePath}");
+                    statusText.Text = "文本保存成功: " + Path.GetFileName(savePath);
                 }
 
                 previewOverlay.IsVisible = false;
@@ -1461,6 +1455,13 @@ namespace UABEA.Android
                 Log("保存文本异常: " + ex);
                 statusText.Text = "保存失败: " + ex.Message;
             }
+        }
+
+        /// <summary>保存文本到指定路径（占位实现，当前 SaveText 已内联保存）</summary>
+        private Task DoSaveTextToPath(string path)
+        {
+            // 当前 BtnSaveText_Click 已直接内联保存逻辑，此方法作为 FileBrowser 调度占位
+            return Task.CompletedTask;
         }
 
         // ==================== 贴图工具方法 ====================

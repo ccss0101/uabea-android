@@ -43,10 +43,11 @@
                 <Button Name="btnSettings" Content="设置" Height="46" MinWidth="70" FontSize="13"/>
             </StackPanel>
 
-            <!-- 资产列表标题 + 导出全部 -->
-            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,2">
-                <TextBlock Grid.Column="0" Text="资产列表：" FontSize="13"/>
-                <Button Grid.Column="1" Name="btnExportAll" Content="导出全部" Height="36" MinWidth="80" FontSize="12" IsEnabled="False"/>
+            <!-- 资产列表标题 + 导出全部 + 搜索框 -->
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,2">
+                <TextBlock Grid.Column="0" Text="资产列表：" FontSize="13" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Name="searchBox" Watermark="搜索过滤..." FontSize="11" MinWidth="120" Margin="4,0,0,0"/>
+                <Button Grid.Column="2" Name="btnExportAll" Content="导出全部" Height="36" MinWidth="80" FontSize="12" IsEnabled="False" Margin="4,0,0,0"/>
             </Grid>
 
             <!-- 资产列表 -->

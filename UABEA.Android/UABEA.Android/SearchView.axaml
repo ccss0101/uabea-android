@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="UABEA.Android.SearchView">
+    <Border Background="#80000000"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="#222" CornerRadius="8" Padding="16"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MinWidth="320" MaxWidth="460">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Text="搜索资产" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,12"/>
+                <TextBox Grid.Row="1" Name="boxKeyword" Watermark="关键词(支持 * 通配符)" FontSize="14" Margin="0,0,0,8"/>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="16" Margin="0,0,0,8">
+                    <RadioButton Name="rdoDown" Content="向下" IsChecked="True"/>
+                    <RadioButton Name="rdoUp" Content="向上"/>
+                    <CheckBox Name="chkCaseSensitive" Content="区分大小写"/>
+                </StackPanel>
+                <TextBlock Grid.Row="3" Name="hintText" FontSize="11" Foreground="#aaa" Margin="0,0,0,8" TextWrapping="Wrap"
+                           Text="提示:无通配符时做子串匹配;* 匹配任意字符"/>
+                <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Name="btnConfirm" Content="搜索" Height="40" MinWidth="90"/>
+                    <Button Name="btnCancel" Content="取消" Height="40" MinWidth="70"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

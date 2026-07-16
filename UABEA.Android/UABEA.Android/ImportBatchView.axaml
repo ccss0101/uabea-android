@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:android="clr-namespace:UABEA.Android"
+             x:Class="UABEA.Android.ImportBatchView">
+    <Border Background="#80000000"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="#222" CornerRadius="8" Padding="16"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MinWidth="340" MaxWidth="500" MaxHeight="650">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <TextBlock Grid.Row="0" Text="批量导入(raw)" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" Name="matchSummary" FontSize="12" Foreground="#aaa" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                <ScrollViewer Grid.Row="2" MaxHeight="450" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl Name="matchList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type android:ImportBatchRow}">
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding AssetName}" Foreground="White" FontSize="13" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="10" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Name="fileCombo"
+                                              ItemsSource="{Binding MatchingFiles}"
+                                              SelectedIndex="{Binding SelectedIndex}"
+                                              MinWidth="160" Margin="8,0,0,0" IsEnabled="{Binding HasMatch}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+                    <Button Name="btnConfirm" Content="确认导入" Height="40" MinWidth="100"/>
+                    <Button Name="btnCancel" Content="取消" Height="40" MinWidth="80"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

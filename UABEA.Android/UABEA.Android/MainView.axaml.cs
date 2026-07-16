@@ -29,6 +29,15 @@ namespace UABEA.Android
         private BundleFileInstance? _bundleInst;
         private BundleWorkspace? _workspace;
         private AssetsFileInstance? _standaloneAssetsInst;
+        private AssetWorkspace? _assetWorkspace;
+        // 搜索态
+        private string _navSearchText = "";
+        private int _navSearchStart;
+        private bool _navSearchDown = true;
+        private bool _navSearchCaseSensitive;
+        private bool _navSearching;
+        // 类型过滤
+        private HashSet<int> _filteredOutClassIds = new();
         private ObservableCollection<AssetListItem> _items = new ObservableCollection<AssetListItem>();
         // 完整未过滤列表（搜索时据此过滤 _items）
         private List<AssetListItem> _allItems = new List<AssetListItem>();
@@ -63,6 +72,8 @@ namespace UABEA.Android
         {
             Open,        // 打开 bundle/assets 文件
             Import,      // 导入替换文件
+            ImportAll,   // 批量导入到 bundle
+            BatchImportRaw, // 资产级批量导入 raw
             ExportItem,  // 导出单项
             ExportAll,   // 批量导出到目录
             SaveBundle,  // 保存 bundle
@@ -85,6 +96,12 @@ namespace UABEA.Android
             btnCompress.Click += BtnCompress_Click;
             btnClose.Click += BtnClose_Click;
             btnExportAll.Click += BtnExportAll_Click;
+            btnImportAll.Click += BtnImportAll_Click;
+            btnBatchImportRaw.Click += BtnBatchImportRaw_Click;
+            btnSearch.Click += BtnSearch_Click;
+            btnContinueSearch.Click += BtnContinueSearch_Click;
+            btnGoTo.Click += BtnGoTo_Click;
+            btnFilterType.Click += BtnFilterType_Click;
             btnInfo.Click += BtnInfo_Click;
             btnExport.Click += BtnExport_Click;
             btnImport.Click += BtnImport_Click;
@@ -261,6 +278,14 @@ namespace UABEA.Android
                         Log($"批量导出到目录: {path}");
                         await DoExportAllToDir(path);
                         break;
+                    case PendingFileAction.ImportAll:
+                        Log($"批量导入到目录: {path}");
+                        await DoImportAllToDir(path);
+                        break;
+                    case PendingFileAction.BatchImportRaw:
+                        Log($"资产级批量导入目录: {path}");
+                        ShowImportBatchView(path);
+                        break;
                     case PendingFileAction.SaveBundle:
                         Log($"保存到: {path}");
                         await DoSaveBundleToPath(path);
@@ -322,6 +347,9 @@ namespace UABEA.Android
                     if (uVer == "0.0.0") uVer = "2019.4";
                     _am.LoadClassDatabaseFromPackage(uVer);
 
+                    _assetWorkspace = new AssetWorkspace(_am, fromBundle: false);
+                    _assetWorkspace.LoadAssetsFile(_standaloneAssetsInst, true);
+
                     RefreshAssetListFromAssetsFile(_standaloneAssetsInst);
                     UpdateStatusText();
                     SetBundleControlsEnabled(true, false);
@@ -365,31 +393,63 @@ namespace UABEA.Android
             _items.Clear();
             _allItems.Clear();
             var cldb = _am.ClassDatabase;
-            foreach (var inf in fileInst.file.AssetInfos)
-            {
-                int classId = inf.TypeId;
-                string typeName;
-                try
-                {
-                    var type = cldb.FindAssetClassByID(classId);
-                    typeName = type != null ? cldb.GetString(type.Name) : $"0x{classId:X}";
-                }
-                catch
-                {
-                    typeName = $"0x{classId:X}";
-                }
 
-                _items.Add(new AssetListItem
+            if (_assetWorkspace != null && _assetWorkspace.LoadedAssets.Count > 0)
+            {
+                foreach (var kv in _assetWorkspace.LoadedAssets)
                 {
-                    Name = $"{typeName} #{inf.PathId}",
-                    SizeText = $"Size: {inf.ByteSize} bytes",
-                    PathId = inf.PathId,
-                    IsAsset = true,
-                    AssetInfo = inf,
-                    FileInstance = fileInst
-                });
+                    var cont = kv.Value;
+                    int classId = cont.ClassId;
+                    string typeName;
+                    try
+                    {
+                        var type = cldb.FindAssetClassByID(classId);
+                        typeName = type != null ? cldb.GetString(type.Name) : $"0x{classId:X}";
+                    }
+                    catch
+                    {
+                        typeName = $"0x{classId:X}";
+                    }
+
+                    _items.Add(new AssetListItem
+                    {
+                        Name = $"{typeName} #{cont.PathId}",
+                        SizeText = $"Size: {cont.Size} bytes",
+                        PathId = cont.PathId,
+                        IsAsset = true,
+                        FileInstance = cont.FileInstance,
+                        Container = cont
+                    });
+                }
             }
-            // 同步 _allItems
+            else
+            {
+                foreach (var inf in fileInst.file.AssetInfos)
+                {
+                    int classId = inf.TypeId;
+                    string typeName;
+                    try
+                    {
+                        var type = cldb.FindAssetClassByID(classId);
+                        typeName = type != null ? cldb.GetString(type.Name) : $"0x{classId:X}";
+                    }
+                    catch
+                    {
+                        typeName = $"0x{classId:X}";
+                    }
+
+                    _items.Add(new AssetListItem
+                    {
+                        Name = $"{typeName} #{inf.PathId}",
+                        SizeText = $"Size: {inf.ByteSize} bytes",
+                        PathId = inf.PathId,
+                        IsAsset = true,
+                        AssetInfo = inf,
+                        FileInstance = fileInst
+                    });
+                }
+            }
+
             _allItems.Clear();
             foreach (var i in _items) _allItems.Add(i);
             ApplySearchFilter();
@@ -398,30 +458,23 @@ namespace UABEA.Android
         /// <summary>根据搜索框文本过滤资产列表</summary>
         private void ApplySearchFilter()
         {
-            var keyword = searchBox?.Text?.Trim() ?? "";
-            if (string.IsNullOrEmpty(keyword))
-            {
-                // 无关键字：显示全部
-                if (_items.Count != _allItems.Count)
-                {
-                    _items.Clear();
-                    foreach (var i in _allItems) _items.Add(i);
-                }
-                return;
-            }
-
+            var keyword = searchBox.Text ?? "";
             _items.Clear();
             foreach (var item in _allItems)
             {
-                if (item.Name != null && item.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                    _items.Add(item);
+                if (keyword.Length > 0 && item.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+                if (item.Container != null && _filteredOutClassIds.Contains(item.Container.ClassId))
+                    continue;
+                _items.Add(item);
             }
         }
 
         private void AssetList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
-            bool hasSel = assetList.SelectedItem != null;
+            bool hasSel = assetList.SelectedItems.Count > 0;
             bool isBundle = _bundleInst != null;
+            bool isAssets = _standaloneAssetsInst != null;
             btnPreview.IsEnabled = hasSel;
             btnInfo.IsEnabled = hasSel;
             btnExport.IsEnabled = hasSel;
@@ -429,12 +482,18 @@ namespace UABEA.Android
             btnDump.IsEnabled = hasSel;
             btnRename.IsEnabled = hasSel && isBundle;
             btnRemove.IsEnabled = hasSel && isBundle;
+            btnBatchImportRaw.IsEnabled = hasSel && isAssets;
+            btnSearch.IsEnabled = hasSel && isAssets;
+            btnContinueSearch.IsEnabled = isAssets && _navSearching;
+            btnGoTo.IsEnabled = hasSel && isAssets;
+            btnFilterType.IsEnabled = isAssets;
         }
 
         /// <summary>设置 bundle 相关按钮的启用状态</summary>
         private void SetBundleControlsEnabled(bool enabled, bool isBundle)
         {
             btnExportAll.IsEnabled = enabled && isBundle;
+            btnImportAll.IsEnabled = enabled && isBundle;
             btnClose.IsEnabled = enabled;
             btnSave.IsEnabled = false; // 保存只在有修改时启用
             btnCompress.IsEnabled = enabled && isBundle;
@@ -445,7 +504,7 @@ namespace UABEA.Android
         // 使用内置文件选择器（Save 模式）选择导出目标，避免系统选择器导致掉后台
         private void BtnExport_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null) return;
 
             _pendingFileAction = PendingFileAction.ExportItem;
@@ -517,11 +576,344 @@ namespace UABEA.Android
             }
         }
 
+        // ===== 批量导入(bundle 级)=====
+        private void BtnImportAll_Click(object? sender, RoutedEventArgs e)
+        {
+            if (_bundleInst == null) return;
+            _pendingFileAction = PendingFileAction.ImportAll;
+            ShowFileBrowser(mode: FileBrowserView.BrowserMode.Directory);
+        }
+
+        private async Task DoImportAllToDir(string dir)
+        {
+            if (_bundleInst == null || _workspace == null) return;
+            try
+            {
+                var files = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).ToList();
+                if (files.Count == 0)
+                {
+                    statusText.Text = "未找到文件";
+                    Log("批量导入:目录为空");
+                    return;
+                }
+
+                progressBar.IsIndeterminate = false;
+                progressBar.Maximum = files.Count;
+                progressBar.Value = 0;
+                progressText.Text = $"导入中 0/{files.Count}";
+                progressOverlay.IsVisible = true;
+
+                int success = 0, fail = 0;
+                await Task.Run(() =>
+                {
+                    for (int i = 0; i < files.Count; i++)
+                    {
+                        string filePath = files[i];
+                        try
+                        {
+                            string relPath = Path.GetRelativePath(dir, filePath)
+                                .Replace("\\", "/").TrimEnd('/');
+
+                            BundleWorkspaceItem? existing = _workspace!.Files
+                                .FirstOrDefault(f => f.Name == relPath);
+                            bool isSerialized = existing != null
+                                ? existing.IsSerialized
+                                : FileTypeDetector.DetectFileType(filePath) == DetectedFileType.AssetsFile;
+
+                            _workspace.AddOrReplaceFile(File.OpenRead(filePath), relPath, isSerialized);
+                            success++;
+                        }
+                        catch (Exception ex)
+                        {
+                            fail++;
+                            Dispatcher.UIThread.Post(() => Log($"跳过 {Path.GetFileName(filePath)}: {ex.Message}"));
+                        }
+
+                        int done = i + 1;
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            progressBar.Value = done;
+                            progressText.Text = $"导入中 {done}/{files.Count}";
+                        });
+                    }
+                });
+
+                progressOverlay.IsVisible = false;
+                SetChanges(true);
+                RefreshAssetListFromBundle();
+                statusText.Text = $"已批量导入 {success}/{files.Count} 项" + (fail > 0 ? $"(失败 {fail})" : "");
+                Log($"批量导入完成:成功 {success},失败 {fail},目录 {dir}");
+            }
+            catch (Exception ex)
+            {
+                progressOverlay.IsVisible = false;
+                Log("批量导入异常: " + ex);
+                statusText.Text = "批量导入失败: " + ex.Message;
+            }
+        }
+
+        // ===== 批量导入(资产级 raw)=====
+        private void BtnBatchImportRaw_Click(object? sender, RoutedEventArgs e)
+        {
+            if (_standaloneAssetsInst == null || _assetWorkspace == null) return;
+
+            var selection = assetList.SelectedItems.OfType<AssetListItem>()
+                .Where(i => i.Container != null)
+                .Select(i => i.Container!)
+                .ToList();
+            if (selection.Count == 0)
+            {
+                statusText.Text = "请先选中至少一个资产";
+                return;
+            }
+
+            _pendingFileAction = PendingFileAction.BatchImportRaw;
+            ShowFileBrowser(mode: FileBrowserView.BrowserMode.Directory);
+        }
+
+        private void ShowImportBatchView(string dir)
+        {
+            if (_assetWorkspace == null) return;
+
+            var selection = assetList.SelectedItems.OfType<AssetListItem>()
+                .Where(i => i.Container != null)
+                .Select(i => i.Container!)
+                .ToList();
+
+            if (selection.Count == 0)
+            {
+                statusText.Text = "无有效资产";
+                return;
+            }
+
+            importBatchView.Initialize(_assetWorkspace, selection, dir);
+            importBatchView.Confirmed -= ImportBatchView_Confirmed;
+            importBatchView.Confirmed += ImportBatchView_Confirmed;
+            importBatchOverlay.IsVisible = true;
+        }
+
+        private async void ImportBatchView_Confirmed(object? sender, List<ImportBatchInfo>? batchInfos)
+        {
+            importBatchOverlay.IsVisible = false;
+            if (batchInfos == null || batchInfos.Count == 0)
+            {
+                statusText.Text = batchInfos == null ? "已取消" : "无导入项";
+                return;
+            }
+            await DoBatchImportRaw(batchInfos);
+        }
+
+        private async Task DoBatchImportRaw(List<ImportBatchInfo> batchInfos)
+        {
+            if (_assetWorkspace == null) return;
+            try
+            {
+                progressBar.IsIndeterminate = false;
+                progressBar.Maximum = batchInfos.Count;
+                progressBar.Value = 0;
+                progressText.Text = $"导入中 0/{batchInfos.Count}";
+                progressOverlay.IsVisible = true;
+
+                int success = 0, fail = 0;
+                await Task.Run(() =>
+                {
+                    for (int i = 0; i < batchInfos.Count; i++)
+                    {
+                        var bi = batchInfos[i];
+                        try
+                        {
+                            using var fs = File.OpenRead(bi.importFile);
+                            var importer = new AssetImportExport();
+                            byte[] bytes = importer.ImportRawAsset(fs);
+
+                            AssetsReplacer replacer = AssetImportExport.CreateAssetReplacer(bi.cont, bytes);
+                            _assetWorkspace!.AddReplacer(bi.cont.FileInstance, replacer, new MemoryStream(bytes));
+                            success++;
+                        }
+                        catch (Exception ex)
+                        {
+                            fail++;
+                            Dispatcher.UIThread.Post(() => Log($"资产 {bi.assetName} 导入失败: {ex.Message}"));
+                        }
+
+                        int done = i + 1;
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            progressBar.Value = done;
+                            progressText.Text = $"导入中 {done}/{batchInfos.Count}";
+                        });
+                    }
+                });
+
+                progressOverlay.IsVisible = false;
+                SetChanges(true);
+                if (_standaloneAssetsInst != null) RefreshAssetListFromAssetsFile(_standaloneAssetsInst);
+                statusText.Text = $"已批量导入 {success}/{batchInfos.Count} 个资产" + (fail > 0 ? $"(失败 {fail})" : "");
+                Log($"资产级批量导入完成:成功 {success},失败 {fail}");
+            }
+            catch (Exception ex)
+            {
+                progressOverlay.IsVisible = false;
+                Log("资产级批量导入异常: " + ex);
+                statusText.Text = "资产级批量导入失败: " + ex.Message;
+            }
+        }
+
+        // ===== 导航与搜索 =====
+        private void NextNameSearch()
+        {
+            if (!_navSearching)
+            {
+                statusText.Text = "请先执行搜索";
+                return;
+            }
+
+            bool found = false;
+            int count = _items.Count;
+
+            if (_navSearchDown)
+            {
+                for (int i = _navSearchStart; i < count; i++)
+                {
+                    if (SearchUtils.WildcardMatches(_items[i].Name, _navSearchText, _navSearchCaseSensitive))
+                    {
+                        assetList.SelectedIndex = i;
+                        assetList.ScrollIntoView(_items[i]);
+                        _navSearchStart = i + 1;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = _navSearchStart; i >= 0; i--)
+                {
+                    if (SearchUtils.WildcardMatches(_items[i].Name, _navSearchText, _navSearchCaseSensitive))
+                    {
+                        assetList.SelectedIndex = i;
+                        assetList.ScrollIntoView(_items[i]);
+                        _navSearchStart = i - 1;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found)
+            {
+                statusText.Text = "未找到匹配资产";
+                _navSearchText = "";
+                _navSearchStart = 0;
+                _navSearchDown = true;
+                _navSearching = false;
+                AssetList_SelectionChanged(null, null!);
+            }
+            else
+            {
+                statusText.Text = $"匹配: {_items[assetList.SelectedIndex].Name}";
+            }
+        }
+
+        private void SelectAsset(long targetPathId)
+        {
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var item = _items[i];
+                if (item.Container != null && item.Container.PathId == targetPathId)
+                {
+                    assetList.SelectedIndex = i;
+                    assetList.ScrollIntoView(item);
+                    statusText.Text = $"已跳转: {item.Name}";
+                    return;
+                }
+            }
+            statusText.Text = $"未找到 PathID 为 {targetPathId} 的资产";
+        }
+
+        private void BtnSearch_Click(object? sender, RoutedEventArgs e)
+        {
+            searchView.Confirmed -= SearchView_Confirmed;
+            searchView.Confirmed += SearchView_Confirmed;
+            searchView.FocusKeyword();
+            searchOverlay.IsVisible = true;
+        }
+
+        private void BtnContinueSearch_Click(object? sender, RoutedEventArgs e)
+        {
+            if (!_navSearching)
+            {
+                statusText.Text = "无上次搜索,请先搜索";
+                return;
+            }
+            NextNameSearch();
+        }
+
+        private void SearchView_Confirmed(object? sender, SearchDialogResult? result)
+        {
+            searchOverlay.IsVisible = false;
+            if (result == null || !result.ok) return;
+
+            _navSearchText = result.text;
+            _navSearchDown = result.isDown;
+            _navSearchCaseSensitive = result.caseSensitive;
+            _navSearching = true;
+
+            int sel = assetList.SelectedIndex;
+            _navSearchStart = sel >= 0 ? sel : 0;
+            if (!_navSearchDown && _navSearchStart == 0 && _items.Count > 0)
+                _navSearchStart = _items.Count - 1;
+
+            AssetList_SelectionChanged(null, null!);
+            NextNameSearch();
+        }
+
+        private void BtnGoTo_Click(object? sender, RoutedEventArgs e)
+        {
+            goToAssetView.Confirmed -= GoToAssetView_Confirmed;
+            goToAssetView.Confirmed += GoToAssetView_Confirmed;
+            goToAssetView.Reset();
+            goToOverlay.IsVisible = true;
+        }
+
+        private void GoToAssetView_Confirmed(object? sender, long? pathId)
+        {
+            goToOverlay.IsVisible = false;
+            if (pathId == null) return;
+            SelectAsset(pathId.Value);
+        }
+
+        private void BtnFilterType_Click(object? sender, RoutedEventArgs e)
+        {
+            if (_assetWorkspace == null) return;
+            var checkedClassIds = new HashSet<int>();
+            foreach (var kv in _assetWorkspace.LoadedAssets)
+            {
+                int classId = kv.Value.ClassId;
+                if (!_filteredOutClassIds.Contains(classId))
+                    checkedClassIds.Add(classId);
+            }
+            filterTypeView.Initialize(_assetWorkspace, checkedClassIds, _am);
+            filterTypeView.Confirmed -= FilterTypeView_Confirmed;
+            filterTypeView.Confirmed += FilterTypeView_Confirmed;
+            filterTypeOverlay.IsVisible = true;
+        }
+
+        private void FilterTypeView_Confirmed(object? sender, HashSet<int>? filteredOut)
+        {
+            filterTypeOverlay.IsVisible = false;
+            if (filteredOut == null) return;
+            _filteredOutClassIds = filteredOut;
+            _navSearchStart = 0;
+            ApplySearchFilter();
+            statusText.Text = $"已应用类型过滤(隐藏 {filteredOut.Count} 个类型)";
+        }
+
         // ==================== 导入（插件替换） ====================
         // 使用内置文件选择器（Open 模式）选择导入源文件，避免系统选择器导致掉后台
         private void BtnImport_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null || _workspace == null) return;
 
             _pendingFileAction = PendingFileAction.Import;
@@ -603,7 +995,7 @@ namespace UABEA.Android
         // ==================== 删除 ====================
         private void BtnRemove_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null || _workspace == null || _bundleInst == null) return;
 
             try
@@ -638,7 +1030,7 @@ namespace UABEA.Android
         // ==================== Info ====================
         private void BtnInfo_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null) return;
 
             try
@@ -711,7 +1103,7 @@ namespace UABEA.Android
         // 使用内置文件选择器（Save 模式）选择 Dump 输出路径
         private void BtnDump_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null) return;
 
             _pendingFileAction = PendingFileAction.DumpSave;
@@ -812,7 +1204,7 @@ namespace UABEA.Android
         // ==================== 重命名 ====================
         private void BtnRename_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null || _workspace == null) return;
 
             _renameTarget = item;
@@ -996,7 +1388,7 @@ namespace UABEA.Android
         // ==================== 预览 ====================
         private async void BtnPreview_Click(object? sender, RoutedEventArgs e)
         {
-            var item = assetList.SelectedItem as AssetListItem;
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
             if (item == null) return;
 
             try
@@ -1626,6 +2018,7 @@ namespace UABEA.Android
                 _bundleInst = null;
                 _workspace = null;
                 _standaloneAssetsInst = null;
+                _assetWorkspace = null;
                 _items.Clear();
                 _changesUnsaved = false;
                 _changesMade = false;
@@ -1648,6 +2041,7 @@ namespace UABEA.Android
         public AssetBundleDirectoryInfo? DirInfo { get; set; }
         public AssetFileInfo? AssetInfo { get; set; }
         public AssetsFileInstance? FileInstance { get; set; }
+        public AssetContainer? Container { get; set; }
         public bool IsAsset { get; set; }
     }
 }

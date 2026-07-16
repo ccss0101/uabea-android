@@ -44,14 +44,15 @@
             </StackPanel>
 
             <!-- 资产列表标题 + 导出全部 + 搜索框 -->
-            <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,2">
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,2">
                 <TextBlock Grid.Column="0" Text="资产列表：" FontSize="13" VerticalAlignment="Center"/>
-                <TextBox Grid.Column="1" Name="searchBox" Watermark="搜索过滤..." FontSize="11" MinWidth="120" Margin="4,0,0,0"/>
+                <Button Grid.Column="1" Name="btnImportAll" Content="导入全部" Height="36" MinWidth="80" FontSize="12" IsEnabled="False" Margin="4,0,0,0"/>
                 <Button Grid.Column="2" Name="btnExportAll" Content="导出全部" Height="36" MinWidth="80" FontSize="12" IsEnabled="False" Margin="4,0,0,0"/>
+                <TextBox Grid.Column="3" Name="searchBox" Watermark="搜索过滤..." FontSize="11" MinWidth="120" Margin="4,0,0,0"/>
             </Grid>
 
             <!-- 资产列表 -->
-            <ListBox Grid.Row="4" Name="assetList" FontSize="13" MinHeight="120">
+            <ListBox Grid.Row="4" Name="assetList" FontSize="13" MinHeight="120" SelectionMode="Multiple">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Margin="2">
@@ -68,6 +69,11 @@
                 <Button Name="btnInfo" Content="Info" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnExport" Content="导出" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnImport" Content="导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnBatchImportRaw" Content="批量导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnSearch" Content="搜索" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnContinueSearch" Content="继续搜" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnGoTo" Content="跳转" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnFilterType" Content="类型过滤" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnDump" Content="Dump" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnRename" Content="重命名" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnRemove" Content="删除" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
@@ -202,6 +208,31 @@
                     </StackPanel>
                 </Grid>
             </Border>
+        </Border>
+
+        <!-- 批量导入匹配 overlay -->
+        <Border Name="importBatchOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:ImportBatchView Name="importBatchView"/>
+        </Border>
+        <!-- 搜索 overlay -->
+        <Border Name="searchOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:SearchView Name="searchView"/>
+        </Border>
+        <!-- 跳转 overlay -->
+        <Border Name="goToOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:GoToAssetView Name="goToAssetView"/>
+        </Border>
+        <!-- 类型过滤 overlay -->
+        <Border Name="filterTypeOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:FilterTypeView Name="filterTypeView"/>
         </Border>
 
         <!-- 内置文件选择器弹出层：避免系统文件选择器导致应用掉后台被回收。

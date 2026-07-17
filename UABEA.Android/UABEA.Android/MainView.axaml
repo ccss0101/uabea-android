@@ -1,312 +1,124 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:uabea="clr-namespace:UABEAvalonia;assembly=UABEA.Core"
              xmlns:android="clr-namespace:UABEA.Android"
              x:Class="UABEA.Android.MainView">
-    <!-- 设置弹出层用到的配置项 DataTemplate（按运行时类型自动选择） -->
-    <UserControl.DataTemplates>
-        <DataTemplate DataType="{x:Type uabea:ConfigurationBooleanItem}">
-            <StackPanel Margin="0,8" Spacing="2">
-                <CheckBox IsChecked="{Binding Value}" Content="{Binding Title}"/>
-                <TextBlock Text="{Binding Description}" Opacity="0.6" TextWrapping="Wrap" Margin="24,0,0,0" FontSize="11"/>
-            </StackPanel>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type uabea:ConfigurationIntegerItem}">
-            <StackPanel Margin="0,8" Spacing="2">
-                <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
-                <NumericUpDown Value="{Binding Value}" Minimum="{Binding RangeMin}" Maximum="{Binding RangeMax}" Width="180" HorizontalAlignment="Left"/>
-                <TextBlock Text="{Binding Description}" Opacity="0.6" TextWrapping="Wrap" FontSize="11"/>
-            </StackPanel>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type uabea:ConfigurationEnumItem}">
-            <StackPanel Margin="0,8" Spacing="2">
-                <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
-                <ComboBox ItemsSource="{Binding EnumValues}" SelectedItem="{Binding Value}" Width="200" HorizontalAlignment="Left"/>
-                <TextBlock Text="{Binding Description}" Opacity="0.6" TextWrapping="Wrap" FontSize="11"/>
-            </StackPanel>
-        </DataTemplate>
-    </UserControl.DataTemplates>
-    <Panel>
-        <Grid Margin="8" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto">
-            <!-- 标题 -->
-            <TextBlock Grid.Row="0" Text="UABEA Android" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,4"/>
+    <Grid Background="#1E1E1E">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 顶栏 -->
+            <RowDefinition Height="Auto"/>   <!-- 搜索栏 -->
+            <RowDefinition Height="*"/>      <!-- 列表 / 编辑区 -->
+            <RowDefinition Height="Auto"/>   <!-- 状态栏 -->
+            <RowDefinition Height="Auto"/>   <!-- 日志 -->
+        </Grid.RowDefinitions>
 
-            <!-- 状态 -->
-            <TextBlock Grid.Row="1" Name="statusText" Text="初始化中..." FontSize="13" Margin="0,0,0,4" TextWrapping="Wrap"/>
-
-            <!-- 文件操作按钮 -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4" HorizontalAlignment="Center">
-                <Button Name="btnOpen" Content="打开" Height="46" MinWidth="70" FontSize="13"/>
-                <Button Name="btnSave" Content="保存" Height="46" MinWidth="70" FontSize="13" IsEnabled="False"/>
-                <Button Name="btnCompress" Content="压缩" Height="46" MinWidth="70" FontSize="13" IsEnabled="False"/>
-                <Button Name="btnClose" Content="关闭" Height="46" MinWidth="70" FontSize="13" IsEnabled="False"/>
-                <Button Name="btnSettings" Content="设置" Height="46" MinWidth="70" FontSize="13"/>
-            </StackPanel>
-
-            <!-- 资产列表标题 + 导出全部 + 搜索框 -->
-            <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,2">
-                <TextBlock Grid.Column="0" Text="资产列表：" FontSize="13" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Name="btnImportAll" Content="导入全部" Height="36" MinWidth="80" FontSize="12" IsEnabled="False" Margin="4,0,0,0"/>
-                <Button Grid.Column="2" Name="btnExportAll" Content="导出全部" Height="36" MinWidth="80" FontSize="12" IsEnabled="False" Margin="4,0,0,0"/>
-                <TextBox Grid.Column="3" Name="searchBox" Watermark="搜索过滤..." FontSize="11" MinWidth="120" Margin="4,0,0,0"/>
+        <!-- ===== 顶栏 ===== -->
+        <Border Grid.Row="0" Background="#2D2D30" Padding="10,6">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="UABEA 文字翻译" FontSize="16" FontWeight="Bold"
+                           Foreground="#4EC9B0" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Name="topStatus" Text="就绪 - 点击打开选择文件目录"
+                           FontSize="11" Foreground="#969696" VerticalAlignment="Center" Margin="12,0,0,0" TextTrimming="CharacterEllipsis"/>
+                <Button Grid.Column="2" Name="btnOpen"   Content="打开"  Height="36" MinWidth="72" Margin="2" FontSize="13"/>
+                <Button Grid.Column="3" Name="btnSaveAll" Content="保存全部" Height="36" MinWidth="82" Margin="2" FontSize="13" IsEnabled="False"/>
+                <Button Grid.Column="4" Name="btnExportTxt" Content="导出TXT" Height="36" MinWidth="88" Margin="2" FontSize="13" IsEnabled="False"/>
+                <Button Grid.Column="5" Name="btnImportTxt" Content="导入TXT" Height="36" MinWidth="88" Margin="2" FontSize="13" IsEnabled="False"/>
             </Grid>
+        </Border>
 
-            <!-- 资产列表(类官方多列样式:Name | Type | PathID | Size) -->
-            <Border Grid.Row="4" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="2">
+        <!-- ===== 搜索栏 ===== -->
+        <Border Grid.Row="1" Background="#252526" Padding="10,4">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <TextBox Grid.Column="0" Name="searchBox" Watermark="搜索文字..." Height="34" FontSize="13"/>
+                <Button Grid.Column="1" Name="btnClearSearch" Content="✕" Height="34" MinWidth="36" Margin="4,0,0,0" FontSize="14"/>
+                <ToggleSwitch Grid.Column="2" Name="toggleShowModified" Content="仅显示已改" Margin="8,0,0,0" IsVisible="False"/>
+                <TextBlock Grid.Column="3" Name="resultCount" Text="" FontSize="11" Foreground="#969696" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- ===== 列表 / 编辑区(双面板) ===== -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0" Background="#1E1E1E">
+            <!-- 左:条目列表 -->
+            <Border Grid.Column="0" BorderBrush="#3F3F46" BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,*">
-                    <!-- 表头 -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Background="#2D2D30" Margin="6,4">
-                        <TextBlock Grid.Column="0" Text="Name" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC"/>
-                        <TextBlock Grid.Column="1" Text="Type" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC" Margin="8,0,0,0"/>
-                        <TextBlock Grid.Column="2" Text="PathID" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC" Margin="8,0,0,0"/>
-                        <TextBlock Grid.Column="3" Text="Size" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC" Margin="8,0,0,0"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Background="#2D2D30" Margin="8,4">
+                        <TextBlock Grid.Column="0" Text="文字条目" FontWeight="SemiBold" Foreground="#CCCCCC" FontSize="12"/>
+                        <TextBlock Grid.Column="1" Name="listStats" Text="" FontSize="11" Foreground="#969696"/>
                     </Grid>
-                    <ListBox Grid.Row="1" Name="assetList" FontSize="12" MinHeight="100" SelectionMode="Multiple" Background="#1E1E1E" BorderThickness="0">
+                    <ListBox Grid.Row="1" Name="entryList" FontSize="12" Background="#1E1E1E" BorderThickness="0">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="2">
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" Foreground="#E6E6E6" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding TypeName}" FontSize="11" Foreground="#569CD6" Margin="8,0,0,0"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding PathId}" FontSize="11" Foreground="#9CDCFE" Margin="8,0,0,0"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontSize="10" Foreground="#969696" Margin="8,0,0,0"/>
-                                </Grid>
+                                <Border Padding="6,4" BorderBrush="#3F3F46" BorderThickness="0,0,0,1">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding FilePath}" FontSize="10" Foreground="#569CD6" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding FieldPath}" FontSize="10" Foreground="#9CDCFE" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Original}" FontSize="12" Foreground="#E6E6E6" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding Translated}" FontSize="12" Foreground="#4EC9B0" FontStyle="Italic" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
             </Border>
 
-            <!-- 单项操作按钮 -->
-            <WrapPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,4">
-                <Button Name="btnPreview" Content="预览" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnPreview3D" Content="3D预览" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnViewData" Content="查看数据" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnEditData" Content="编辑数据" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnInfo" Content="Info" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnExport" Content="导出" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnImport" Content="导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnImportRaw" Content="Raw导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnBatchImportRaw" Content="批量导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnSearch" Content="搜索" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnContinueSearch" Content="继续搜" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnGoTo" Content="跳转" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnFilterType" Content="类型过滤" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnHierarchy" Content="层级" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnDump" Content="Dump" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnImportDump" Content="Dump导入" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnRename" Content="重命名" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnRemove" Content="删除" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-                <Button Name="btnAddAsset" Content="新增" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
-            </WrapPanel>
-
-            <!-- 日志 -->
-            <Border Grid.Row="6" Background="#1a1a1a" CornerRadius="4" Padding="6" MinHeight="60" MaxHeight="140">
-                <TextBox Name="logBox" IsReadOnly="True" FontFamily="monospace" FontSize="10"
-                         Background="Transparent" Foreground="#00ff00" TextWrapping="Wrap"
-                         AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         BorderThickness="0" Watermark="启动日志"/>
+            <!-- 右:编辑区 -->
+            <Border Grid.Column="1" BorderBrush="#3F3F46" BorderThickness="0,0,0,0">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Background="#2D2D30" Margin="8,4">
+                        <TextBlock Grid.Column="0" Text="编辑" FontWeight="SemiBold" Foreground="#CCCCCC" FontSize="12"/>
+                        <TextBlock Grid.Column="1" Name="editStatus" Text="未选中" FontSize="11" Foreground="#969696"/>
+                    </Grid>
+                    <!-- 原文(只读) -->
+                    <StackPanel Grid.Row="1" Margin="8,6">
+                        <TextBlock Text="原文" FontSize="11" Foreground="#969696" Margin="0,0,0,2"/>
+                        <TextBox Name="originalBox" IsReadOnly="True" FontSize="13" Height="100"
+                                 AcceptsReturn="True" TextWrapping="Wrap" Background="#252526" BorderBrush="#3F3F46"/>
+                    </StackPanel>
+                    <!-- 译文(可编辑) -->
+                    <StackPanel Grid.Row="2" Margin="8,4,8,8">
+                        <TextBlock Text="译文" FontSize="11" Foreground="#4EC9B0" Margin="0,0,0,2"/>
+                        <TextBox Name="translatedBox" FontSize="13"
+                                 AcceptsReturn="True" TextWrapping="Wrap" Background="#252526" BorderBrush="#3F3F46"/>
+                    </StackPanel>
+                    <!-- 编辑操作按钮 -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6" Margin="8">
+                        <Button Name="btnPrevEntry"    Content="上一条" Height="36" MinWidth="76" FontSize="12"/>
+                        <Button Name="btnNextEntry"    Content="下一条" Height="36" MinWidth="76" FontSize="12"/>
+                        <Button Name="btnCopyToTrans"  Content="原文→译文" Height="36" MinWidth="100" FontSize="12"/>
+                        <Button Name="btnApplyEntry"   Content="应用" Height="36" MinWidth="68" FontSize="12" FontWeight="Bold"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
 
-        <!-- 重命名弹出层 -->
-        <Border Name="renameOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="#222" CornerRadius="8" Padding="16"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="280">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="输入新名称" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBox Name="renameBox" FontSize="14" Watermark="新文件名"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button Name="renameOk" Content="确定" Height="40" MinWidth="80"/>
-                        <Button Name="renameCancel" Content="取消" Height="40" MinWidth="80"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+        <!-- ===== 状态栏 ===== -->
+        <Border Grid.Row="3" Background="#007ACC" Padding="10,4">
+            <TextBlock Name="statusText" Text="就绪" Foreground="White" FontSize="12"/>
         </Border>
 
-        <!-- 导入弹出层（选择是否序列化） -->
-        <Border Name="importOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="#222" CornerRadius="8" Padding="16"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="300">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="导入类型" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Name="importFileName" FontSize="12" Foreground="#aaa" TextWrapping="Wrap"/>
-                    <TextBlock Text="该文件是否为序列化 assets 文件？" FontSize="13" Foreground="White" TextWrapping="Wrap"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button Name="importYes" Content="是 (assets)" Height="40" MinWidth="90"/>
-                        <Button Name="importNo" Content="否 (资源)" Height="40" MinWidth="90"/>
-                        <Button Name="importCancel" Content="取消" Height="40" MinWidth="80"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+        <!-- ===== 日志 ===== -->
+        <Border Grid.Row="4" Background="#1A1A1A" Padding="8,4" Height="80">
+            <TextBox Name="logBox" IsReadOnly="True" FontSize="10" Foreground="#969696"
+                     Background="Transparent" BorderThickness="0" TextWrapping="Wrap" AcceptsReturn="True"/>
         </Border>
 
-        <!-- 压缩弹出层（选择压缩方式） -->
-        <Border Name="compressOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="#222" CornerRadius="8" Padding="16"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="300">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="压缩方式" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="LZ4：速度快，体积大&#x0a;LZMA：速度慢，体积小" FontSize="13" Foreground="White" TextWrapping="Wrap"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button Name="compLz4" Content="LZ4" Height="40" MinWidth="80"/>
-                        <Button Name="compLzma" Content="LZMA" Height="40" MinWidth="80"/>
-                        <Button Name="compCancel" Content="取消" Height="40" MinWidth="80"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-        </Border>
-
-        <!-- 进度遮罩 -->
-        <Border Name="progressOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="#222" CornerRadius="8" Padding="20"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="240">
-                <StackPanel Spacing="10" HorizontalAlignment="Center">
-                    <TextBlock Name="progressText" Text="处理中..." FontSize="16" Foreground="White" HorizontalAlignment="Center"/>
-                    <ProgressBar Name="progressBar" IsIndeterminate="True" MinWidth="200"/>
-                </StackPanel>
-            </Border>
-        </Border>
-
-        <!-- 预览弹出层 -->
-        <Border Name="previewOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="#222" CornerRadius="8" Padding="12"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MaxWidth="450" MaxHeight="650">
-                <Grid RowDefinitions="Auto,Auto,*,Auto">
-                    <TextBlock Grid.Row="0" Name="previewTitle" Text="预览" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,6"/>
-                    <TextBlock Grid.Row="1" Name="previewInfo" FontSize="11" Foreground="#aaa" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                    <ScrollViewer Grid.Row="2" MaxHeight="420" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                        <Grid>
-                            <Image Name="previewImage" IsVisible="False" Stretch="Uniform" MaxWidth="400" MaxHeight="400"/>
-                            <TextBox Name="previewTextBox" IsVisible="False"
-                                     AcceptsReturn="True" TextWrapping="Wrap"
-                                     FontFamily="monospace" FontSize="11"
-                                     MinWidth="300" MinHeight="200"
-                                     MaxWidth="400" MaxHeight="400"
-                                     Background="#111" Foreground="#ddd"
-                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                        </Grid>
-                    </ScrollViewer>
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,8,0,0">
-                        <Button Name="btnReplaceTexture" Content="替换贴图" Height="40" MinWidth="90" IsVisible="False"/>
-                        <Button Name="btnSaveText" Content="保存文本" Height="40" MinWidth="90" IsVisible="False"/>
-                        <Button Name="btnClosePreview" Content="关闭" Height="40" MinWidth="80"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Border>
-
-        <!-- 设置弹出层：复用 ConfigurationManager + ConfigurationItem 反射系统。
-             Android 单视图模式下用 overlay 代替 Window.ShowDialog。 -->
-        <Border Name="settingsOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="{DynamicResource SystemRegionBrush}" CornerRadius="8" Padding="16"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="320" MaxWidth="450" MaxHeight="650">
-                <Grid RowDefinitions="Auto,*,Auto">
-                    <TextBlock Grid.Row="0" Text="设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" MaxHeight="500">
-                        <ItemsControl Name="settingsItems"/>
-                    </ScrollViewer>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
-                        <Button Name="btnSettingsClose" Content="关闭" Height="40" MinWidth="90"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Border>
-
-        <!-- 批量导入匹配 overlay -->
-        <Border Name="importBatchOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:ImportBatchView Name="importBatchView"/>
-        </Border>
-        <!-- 搜索 overlay -->
-        <Border Name="searchOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:SearchView Name="searchView"/>
-        </Border>
-        <!-- 跳转 overlay -->
-        <Border Name="goToOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:GoToAssetView Name="goToAssetView"/>
-        </Border>
-        <!-- 类型过滤 overlay -->
-        <Border Name="filterTypeOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:FilterTypeView Name="filterTypeView"/>
-        </Border>
-        <!-- 查看数据(类型树) overlay -->
-        <Border Name="dataOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:DataView Name="dataView"/>
-        </Border>
-        <!-- 编辑数据 overlay -->
-        <Border Name="editDataOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:EditDataView Name="editDataView"/>
-        </Border>
-        <!-- 新增资产 overlay -->
-        <Border Name="addAssetOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:AddAssetView Name="addAssetView"/>
-        </Border>
-        <!-- 文件信息 overlay -->
-        <Border Name="infoOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:AssetInfoView Name="assetInfoView"/>
-        </Border>
-        <!-- 场景层级 overlay -->
-        <Border Name="hierarchyOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:HierarchyView Name="hierarchyView"/>
-        </Border>
-        <!-- Dump 批量导入 overlay -->
-        <Border Name="importDumpOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:ImportDumpView Name="importDumpView"/>
-        </Border>
-        <!-- 3D Mesh 预览 overlay(横屏软件渲染) -->
-        <Border Name="meshPreviewOverlay" IsVisible="False"
-                Background="#80000000"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <android:MeshPreviewView Name="meshPreviewView"/>
-        </Border>
-
-        <!-- 内置文件选择器弹出层：避免系统文件选择器导致应用掉后台被回收。
-             直接通过 System.IO 遍历存储目录，全程在应用进程内完成。 -->
+        <!-- ===== 文件选择器 overlay ===== -->
         <Border Name="fileBrowserOverlay" IsVisible="False"
                 Background="#80000000"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border Background="{DynamicResource SystemRegionBrush}" CornerRadius="8" Padding="12"
-                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                    Margin="8">
-                <android:FileBrowserView Name="fileBrowser"/>
+            <android:FileBrowserView Name="fileBrowser"/>
+        </Border>
+
+        <!-- ===== 进度 overlay ===== -->
+        <Border Name="progressOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Border Background="#1E1E1E" CornerRadius="8" Padding="20" MinWidth="280">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Name="progressText" Text="处理中..." FontSize="14" Foreground="White" HorizontalAlignment="Center"/>
+                    <ProgressBar Name="progressBar" IsIndeterminate="True" Margin="0,12,0,0" MinWidth="240"/>
+                </StackPanel>
             </Border>
         </Border>
-    </Panel>
+    </Grid>
 </UserControl>

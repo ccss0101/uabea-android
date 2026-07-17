@@ -8,8 +8,4 @@
     <application
         android:label="UABEA"
         android:requestLegacyExternalStorage="true" />
-    <!-- 横屏锁定:UABEA 编辑器界面更适合横屏使用 -->
-    <activity android:name="com.uabea.app.MainActivity"
-              android:screenOrientation="landscape"
-              android:configChanges="orientation|screenSize|uiMode" />
 </manifest>

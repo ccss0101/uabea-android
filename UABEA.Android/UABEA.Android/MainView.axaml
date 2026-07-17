@@ -51,21 +51,35 @@
                 <TextBox Grid.Column="3" Name="searchBox" Watermark="搜索过滤..." FontSize="11" MinWidth="120" Margin="4,0,0,0"/>
             </Grid>
 
-            <!-- 资产列表 -->
-            <ListBox Grid.Row="4" Name="assetList" FontSize="13" MinHeight="120" SelectionMode="Multiple">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="2">
-                            <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding SizeText}" FontSize="10" Foreground="Gray"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <!-- 资产列表(类官方多列样式:Name | Type | PathID | Size) -->
+            <Border Grid.Row="4" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="2">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- 表头 -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Background="#2D2D30" Margin="6,4">
+                        <TextBlock Grid.Column="0" Text="Name" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC"/>
+                        <TextBlock Grid.Column="1" Text="Type" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC" Margin="8,0,0,0"/>
+                        <TextBlock Grid.Column="2" Text="PathID" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC" Margin="8,0,0,0"/>
+                        <TextBlock Grid.Column="3" Text="Size" FontWeight="Bold" FontSize="11" Foreground="#CCCCCC" Margin="8,0,0,0"/>
+                    </Grid>
+                    <ListBox Grid.Row="1" Name="assetList" FontSize="12" MinHeight="100" SelectionMode="Multiple" Background="#1E1E1E" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="2">
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" Foreground="#E6E6E6" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TypeName}" FontSize="11" Foreground="#569CD6" Margin="8,0,0,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding PathId}" FontSize="11" Foreground="#9CDCFE" Margin="8,0,0,0"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontSize="10" Foreground="#969696" Margin="8,0,0,0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
 
             <!-- 单项操作按钮 -->
             <WrapPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,4">
                 <Button Name="btnPreview" Content="预览" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
+                <Button Name="btnPreview3D" Content="3D预览" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnViewData" Content="查看数据" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnEditData" Content="编辑数据" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
                 <Button Name="btnInfo" Content="Info" Height="46" MinWidth="64" FontSize="12" IsEnabled="False" Margin="2"/>
@@ -275,6 +289,12 @@
                 Background="#80000000"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <android:ImportDumpView Name="importDumpView"/>
+        </Border>
+        <!-- 3D Mesh 预览 overlay(横屏软件渲染) -->
+        <Border Name="meshPreviewOverlay" IsVisible="False"
+                Background="#80000000"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <android:MeshPreviewView Name="meshPreviewView"/>
         </Border>
 
         <!-- 内置文件选择器弹出层：避免系统文件选择器导致应用掉后台被回收。

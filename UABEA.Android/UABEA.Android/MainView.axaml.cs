@@ -117,6 +117,7 @@ namespace UABEA.Android
             btnRename.Click += BtnRename_Click;
             btnRemove.Click += BtnRemove_Click;
             btnPreview.Click += BtnPreview_Click;
+            btnPreview3D.Click += BtnPreview3D_Click;
 
             btnReplaceTexture.Click += BtnReplaceTexture_Click;
             btnSaveText.Click += BtnSaveText_Click;
@@ -489,7 +490,8 @@ namespace UABEA.Android
                     _items.Add(new AssetListItem
                     {
                         Name = $"{typeName} #{cont.PathId}",
-                        SizeText = $"Size: {cont.Size} bytes",
+                        TypeName = typeName,
+                        SizeText = $"{cont.Size} bytes",
                         PathId = cont.PathId,
                         IsAsset = true,
                         FileInstance = cont.FileInstance,
@@ -516,7 +518,8 @@ namespace UABEA.Android
                     _items.Add(new AssetListItem
                     {
                         Name = $"{typeName} #{inf.PathId}",
-                        SizeText = $"Size: {inf.ByteSize} bytes",
+                        TypeName = typeName,
+                        SizeText = $"{inf.ByteSize} bytes",
                         PathId = inf.PathId,
                         IsAsset = true,
                         AssetInfo = inf,
@@ -571,6 +574,7 @@ namespace UABEA.Android
 
             // 新视图按钮
             btnViewData.IsEnabled = selIsAsset;
+            btnPreview3D.IsEnabled = selIsAsset;
             btnEditData.IsEnabled = selIsAsset;
             btnImportRaw.IsEnabled = selIsAsset;
             btnImportDump.IsEnabled = selIsAsset;
@@ -1423,6 +1427,22 @@ namespace UABEA.Android
         private void HierarchyView_Confirmed(object? sender, bool e)
         {
             hierarchyOverlay.IsVisible = false;
+        }
+
+        // 4.7 3D Mesh 预览(软件渲染,横屏宽幅 overlay)
+        private void BtnPreview3D_Click(object? sender, RoutedEventArgs e)
+        {
+            var item = assetList.SelectedItems.OfType<AssetListItem>().FirstOrDefault();
+            if (item?.Container == null) { Log("请先选中 Mesh 资产"); return; }
+            meshPreviewView.Confirmed -= MeshPreviewView_Confirmed;
+            meshPreviewView.Confirmed += MeshPreviewView_Confirmed;
+            meshPreviewView.Initialize(_assetWorkspace, item.Container, _bundleInst, _workspace);
+            meshPreviewOverlay.IsVisible = true;
+        }
+
+        private void MeshPreviewView_Confirmed(object? sender, bool e)
+        {
+            meshPreviewOverlay.IsVisible = false;
         }
 
         // ==================== Dump ====================
@@ -2363,6 +2383,7 @@ namespace UABEA.Android
     {
         public string Name { get; set; } = "";
         public string SizeText { get; set; } = "";
+        public string TypeName { get; set; } = "";
         public long PathId { get; set; }
         public AssetBundleDirectoryInfo? DirInfo { get; set; }
         public AssetFileInfo? AssetInfo { get; set; }

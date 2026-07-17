@@ -18,6 +18,7 @@ namespace UABEA.Android.Android;
     Theme = "@style/MyTheme.NoActionBar",
     MainLauncher = true,
     Exported = true,
+    ScreenOrientation = ScreenOrientation.Landscape,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity<global::UABEA.Android.App>
 {
